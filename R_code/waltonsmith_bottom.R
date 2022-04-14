@@ -1,4 +1,5 @@
 rm(list=ls())
+gc()
 
 library(fields)
 library(lubridate)
@@ -18,7 +19,7 @@ nc_close(bathy)
 
 ################## geographic scope
 lonbox_e <- -79 ### Florida Bay
-lonbox_w <- -84 ### mouth of Mississippi River
+lonbox_w <- -86 ### mouth of Mississippi River
 latbox_n <- 38 ### northern coast
 latbox_s <- 24 ### remove the Keys
 
@@ -35,7 +36,7 @@ topo <- topo[ind_lon,ind_lat]
 # world <- readOGR('ne_10m_admin_0_countries.shp')
 setwd("~/Desktop/professional/biblioteca/data/shapefiles/gshhg-shp-2.3.7/GSHHS_shp/h/")
 world <- readOGR('GSHHS_h_L1.shp')
-world <- crop(world, extent(-84, -79, 24.5, 28))
+world <- crop(world, extent(-86, -79, 24.5, 28))
 # setwd("~/Desktop/professional/biblioteca/data/shapefiles/Florida_Shoreline__1_to_40%2C000_Scale_-shp")
 # FL <- readOGR('Florida_Shoreline__1_to_40%2C000_Scale_.shp')
 
@@ -51,13 +52,15 @@ ox.col3 <- colorRampPalette(c('dodgerblue4','deepskyblue2','cadetblue1'))
 
 
 setwd('~/Downloads')
-data <- read.csv('WS22022_Sample_log.csv')
+data <- read.csv('WS22072_Sample_log.csv')
+### cruise name for file naming
+cruise <- 'WS22072'
+### only stations at depth
 ind <- which(data$Depth!=0)
 data2 <- data[ind,]
-st_rm <- c('2','MR','9','9.5','10','12','18','21/LK','WS','KW1','KW2')
+st_rm <- c('2','3','6.5','MR','9','9.5','10','12','18','21/LK','EK MID','EK OFF','WS','KW1','KW2')
 data3 <- data2[!is.element(data2$Station,st_rm),]
 data3$Date.GMT <- mdy(data3$Date.GMT)
-
 
 adj <- .1
 resolution <- .01
@@ -68,10 +71,11 @@ xlims <- range(loc.grid$lon)
 ylims <- range(loc.grid$lat)
 
 ### ----------------- Temperature krig -----------------
-data3$tempF <- NISTdegCtOdegF(data3$Temperature..C..CTD.data)
+temp_ind <- grep('temperature',names(data3),ignore.case = T)
+data3$tempF <- NISTdegCtOdegF(data3[,temp_ind])
 my.krig <- spatialProcess(ctd.loc,data3$tempF)
-temp_kriged <- predictSurface(my.krig, loc.grid, extrap=F)
-temp_se <- predictSurfaceSE(my.krig, loc.grid, extrap=F)
+temp_kriged <- predictSurface(my.krig, loc.grid, extrap=T)
+temp_se <- predictSurfaceSE(my.krig, loc.grid, extrap=T)
 
 if(max(temp_kriged$z,na.rm=T)>max(data3$tempF,na.rm=T)){
   temp_kriged$z[which(temp_kriged$z>max(data3$tempF,na.rm=T))] <- max(data3$tempF,na.rm=T)
@@ -80,40 +84,41 @@ if(min(temp_kriged$z,na.rm=T)<min(data3$tempF,na.rm=T)){
   temp_kriged$z[which(temp_kriged$z<min(data3$tempF,na.rm=T))] <- min(data3$tempF,na.rm=T)
 }
 
-temp_breaks <- pretty(data3$tempF,n=10)
+temp_breaks <- pretty(data3$tempF,n=15)
 temp_cols <- temp_col(length(temp_breaks)-1)
 
 
 ### ----------------- Salinity krig -----------------
-my.krig <- spatialProcess(ctd.loc,data3$Salinity..PSU..CTD.data)
-sal_kriged <- predictSurface(my.krig, loc.grid, extrap=F)
-sal_se <- predictSurfaceSE(my.krig, loc.grid, extrap=F)
+sal_ind <- grep('salinity',names(data3),ignore.case = T)
+my.krig <- spatialProcess(ctd.loc,data3[,sal_ind])
+sal_kriged <- predictSurface(my.krig, loc.grid, extrap=T)
+sal_se <- predictSurfaceSE(my.krig, loc.grid, extrap=T)
 
-if(max(sal_kriged$z,na.rm=T)>max(data3$Salinity..PSU..CTD.data,na.rm=T)){
-  sal_kriged$z[which(sal_kriged$z>max(data3$Salinity..PSU..CTD.data,na.rm=T))] <- max(data3$Salinity..PSU..CTD.data,na.rm=T)
+if(max(sal_kriged$z,na.rm=T)>max(data3[,sal_ind],na.rm=T)){
+  sal_kriged$z[which(sal_kriged$z>max(data3[,sal_ind],na.rm=T))] <- max(data3[,sal_ind],na.rm=T)
 }
-if(min(sal_kriged$z,na.rm=T)<min(data3$Salinity..PSU..CTD.data,na.rm=T)){
-  sal_kriged$z[which(sal_kriged$z<min(data3$Salinity..PSU..CTD.data,na.rm=T))] <- min(data3$Salinity..PSU..CTD.data,na.rm=T)
+if(min(sal_kriged$z,na.rm=T)<min(data3[,sal_ind],na.rm=T)){
+  sal_kriged$z[which(sal_kriged$z<min(data3[,sal_ind],na.rm=T))] <- min(data3[,sal_ind],na.rm=T)
 }
 
-# sal_breaks <- pretty(sal_kriged$z,n=10)
-sal_breaks <- pretty(data3$Salinity..PSU..CTD.data,n=10)
+sal_breaks <- pretty(data3[,sal_ind],n=15)
 sal_cols <- sal_col(length(sal_breaks)-1)
 
 
 ### ----------------- DO krig -----------------
-my.krig <- spatialProcess(ctd.loc,data3$Oxygen.mg.l..CTD.data)
-do_kriged <- predictSurface(my.krig, loc.grid, extrap=F)
-do_se <- predictSurfaceSE(my.krig, loc.grid, extrap=F)
+oxy_ind <- grep('oxygen',names(data3),ignore.case = T)
+my.krig <- spatialProcess(ctd.loc,data3[,oxy_ind])
+do_kriged <- predictSurface(my.krig, loc.grid, extrap=T)
+do_se <- predictSurfaceSE(my.krig, loc.grid, extrap=T)
 
-if(max(do_kriged$z,na.rm=T)>max(data3$Oxygen.mg.l..CTD.data,na.rm=T)){
-  do_kriged$z[which(do_kriged$z>max(data3$Oxygen.mg.l..CTD.data,na.rm=T))] <- max(data3$Oxygen.mg.l..CTD.data,na.rm=T)
+if(max(do_kriged$z,na.rm=T)>max(data3[,oxy_ind])){
+  do_kriged$z[which(do_kriged$z>max(data3[,oxy_ind]))] <- max(data3[,oxy_ind])
 }
-if(min(do_kriged$z,na.rm=T)<min(data3$Oxygen.mg.l..CTD.data,na.rm=T)){
-  do_kriged$z[which(do_kriged$z<min(data3$Oxygen.mg.l..CTD.data,na.rm=T))] <- min(data3$Oxygen.mg.l..CTD.data,na.rm=T)
+if(min(do_kriged$z,na.rm=T)<min(data3[,oxy_ind])){
+  do_kriged$z[which(do_kriged$z<min(data3[,oxy_ind]))] <- min(data3[,oxy_ind])
 }
 
-breaks <- pretty(data3$Oxygen.mg.l..CTD.data,n=10)
+breaks <- pretty(data3[,oxy_ind],n=15 )
 cols <- c(ox.col1(length(breaks[breaks<2])),
           ox.col2(length(breaks[breaks>=2 & breaks<3.5])),
           ox.col3(length(breaks[breaks>=3.5])-1))
@@ -121,7 +126,7 @@ cols <- c(ox.col1(length(breaks[breaks<2])),
 
 ### ----------------- plots -----------------
 setwd("~/Desktop/professional/projects/Postdoc_FL/figures")
-png('WS22022_bottom.png', height = 11, width = 4, units = 'in', res=300)
+png(paste0(cruise,'_bottom.png'), height = 11, width = 4, units = 'in', res=300)
 par(mfrow=c(3,1),mar=c(4.5,4,2,1),oma=c(4,1,4,1))
 imagePlot(temp_kriged$x,
           temp_kriged$y,
@@ -130,19 +135,18 @@ imagePlot(temp_kriged$x,
           xlab='',ylab='',las=1,
           xlim=xlims,ylim=ylims,
           nlevel=length(temp_cols),legend.width=.7,legend.mar=3)
-contour(temp_kriged$x,
-        temp_kriged$y,
-        temp_kriged$z,
-        levels=temp_breaks,add=T)
-image(temp_se,add=T,breaks=quantile(temp_se$z,c(.9,1),na.rm=T),col='white')
+# contour(temp_kriged$x,
+#         temp_kriged$y,
+#         temp_kriged$z,
+#         levels=temp_breaks,add=T)
+image(temp_se,add=T,breaks=quantile(temp_se$z,c(.4,1),na.rm=T),col='white')
 image(topo_lon,topo_lat,topo,breaks=c(-1,100),col='white',add=T)
 plot(world,col='gray70',add=T)
 contour(topo_lon,topo_lat,topo,add=T,levels=c(-100,-50,-25,-10),col='gray40')
-points(data3$Longitude.Decimal,data3$Latitude.Decimal,pch=20,col='green')
+points(data3$Longitude.Decimal,data3$Latitude.Decimal,pch=16,col='gray50',cex=.5)
 mtext(expression(paste('Longitude (',degree,'W)')),1,line=3,cex=.75)
 mtext(expression(paste('Latitude (',degree,'N)')),2,line=3,cex=.75)
 mtext(expression(paste('Bottom Temperature (',degree,'F)')),adj=1,cex=.75)
-
 
 imagePlot(sal_kriged$x,
           sal_kriged$y,
@@ -151,15 +155,15 @@ imagePlot(sal_kriged$x,
           xlab='',ylab='',las=1,
           xlim=xlims,ylim=ylims,
           nlevel=length(sal_cols),legend.width=.7,legend.mar=3)
-contour(sal_kriged$x,
-        sal_kriged$y,
-        sal_kriged$z,
-        levels=sal_breaks,add=T)
-image(sal_se,add=T,breaks=quantile(sal_se$z,c(.9,1),na.rm=T),col='white')
+# contour(sal_kriged$x,
+#         sal_kriged$y,
+#         sal_kriged$z,
+#         levels=sal_breaks,add=T)
+image(sal_se,add=T,breaks=quantile(sal_se$z,c(.4,1),na.rm=T),col='white')
 image(topo_lon,topo_lat,topo,breaks=c(-1,100),col='white',add=T)
 plot(world,col='gray70',add=T)
 contour(topo_lon,topo_lat,topo,add=T,levels=c(-100,-50,-25,-10),col='gray40')
-points(data3$Longitude.Decimal,data3$Latitude.Decimal,pch=20,col='magenta')
+points(data3$Longitude.Decimal,data3$Latitude.Decimal,pch=16,col='gray50',cex=.5)
 mtext(expression(paste('Longitude (',degree,'W)')),1,line=3,cex=.75)
 mtext(expression(paste('Latitude (',degree,'N)')),2,line=3,cex=.75)
 mtext('Salinity (PSU)',adj=1,cex=.75)
@@ -171,15 +175,15 @@ imagePlot(do_kriged$x,
           xlab='',ylab='',las=1,
           xlim=xlims,ylim=ylims,
           nlevel=length(cols),legend.width=.7,legend.mar=3)
-contour(do_kriged$x,
-        do_kriged$y,
-        do_kriged$z,
-        levels=breaks,add=T)
-image(do_se,add=T,breaks=quantile(do_se$z,c(.9,1),na.rm=T),col='white')
+# contour(do_kriged$x,
+#         do_kriged$y,
+#         do_kriged$z,
+#         levels=breaks,add=T)
+image(do_se,add=T,breaks=quantile(do_se$z,c(.4,1),na.rm=T),col='white')
 image(topo_lon,topo_lat,topo,breaks=c(-2,100),col='white',add=T)
 plot(world,col='gray70',add=T)
 contour(topo_lon,topo_lat,topo,add=T,levels=c(-100,-50,-25,-10),col='gray40')
-points(data3$Longitude.Decimal,data3$Latitude.Decimal,pch=20,col='orange')
+points(data3$Longitude.Decimal,data3$Latitude.Decimal,pch=16,col='gray50',cex=.5)
 mtext(expression(paste('Longitude (',degree,'W)')),1,line=3,cex=.75)
 mtext(expression(paste('Latitude (',degree,'N)')),2,line=3,cex=.75)
 mtext(expression(paste('Bottom DO (mg l'^-1,')')),adj=1,cex=.75)

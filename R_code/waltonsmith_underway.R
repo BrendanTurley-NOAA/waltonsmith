@@ -1,4 +1,5 @@
 rm(list=ls())
+gc()
 
 library(fields)
 library(lubridate)
@@ -38,7 +39,7 @@ topo <- topo[ind_lon,ind_lat]
 setwd("~/Desktop/professional/biblioteca/data/shapefiles/gshhg-shp-2.3.7/GSHHS_shp/h/")
 world <- readOGR('GSHHS_h_L1.shp')
 ### crop to make shapefile smaller and use less RAM
-world <- crop(world, extent(-84, -79, 24.5, 28))
+world <- crop(world, extent(-86, -79, 24.5, 28))
 
 
 ### load underway data
