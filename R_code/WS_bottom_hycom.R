@@ -1,0 +1,110 @@
+rm(list=ls())
+gc()
+
+library(fields)
+library(lubridate)
+library(ncdf4)
+
+################## geogrpahic scope
+lonbox_e <- -80.5 ### Florida Bay
+lonbox_e <- (lonbox_e + 360)
+lonbox_w <- -86 ### mouth of Mississippi River
+lonbox_w <- (lonbox_w + 360)
+latbox_n <- 30.5 ### northern coast
+latbox_s <- 24.5 ### remove the Keys
+
+
+setwd('~/Downloads')
+data <- read.csv('WS22072_Sample_log.csv')
+### cruise name for file naming
+cruise <- 'WS22072'
+### only stations at depth
+ind <- which(data$Depth!=0)
+data2 <- data[ind,]
+st_rm <- c('2','3','6.5','MR','9','9.5','10','12','18','21/LK','EK MID','EK OFF','WS','KW1','KW2')
+data3 <- data2[!is.element(data2$Station,st_rm),]
+# data3$Date.GMT <- mdy(data3$Date.GMT)
+data3$date <- mdy_hms(paste(data3$Date.GMT,data3$Time..GMT.))
+
+
+# https://tds.hycom.org/thredds/catalogs/GLBy0.08/expt_93.0.html
+### now
+url <- 'https://tds.hycom.org/thredds/dodsC/GLBy0.08/expt_93.0'
+data <- nc_open(url)
+
+time <- ncvar_get(data,'time')
+time2 <- as.Date(time/24,origin='2000-01-01 00:00:00')
+time3 <- as.POSIXct(time*3600,origin='2000-01-01',tz='GMT')
+# time2 <- as.Date(time/24,origin='2022-02-25 12:00:00')
+# time3 <- as.POSIXct(time*3600,origin='2022-02-25 12:00:00',tz='GMT')
+
+lat <- ncvar_get(data,'lat')
+# ind_lat <- which(lat>=latbox_s & lat<=latbox_n)
+lon <- ncvar_get(data,'lon')
+# ind_lon <- which(lon>=lonbox_w & lon<=lonbox_e)
+
+z <- ncvar_get(data,'depth')
+
+
+ind_time <- sapply(data3$date,function(x) which.min(abs(x-time3)))
+ind_lon <- sapply(data3$Longitude.Decimal+360,function(x) which.min(abs(x-lon)))
+ind_lat <- sapply(data3$Latitude.Decimal,function(x) which.min(abs(x-lat)))
+
+hycom_dat <- data.frame(bot_temp=rep(NA,length(ind_time)),
+                        bot_sal=rep(NA,length(ind_time)))
+for(i in 1:length(ind_time)){
+  hycom_dat[i,1] <- ncvar_get(data,'water_temp_bottom',
+                              start=c(ind_lon[i],ind_lat[i],ind_time[i]),
+                              count=c(1,1,1))
+  
+  hycom_dat[i,2] <- ncvar_get(data,'salinity_bottom',
+                              start=c(ind_lon[i],ind_lat[i],ind_time[i]),
+                              count=c(1,1,1))
+}
+
+t_rsq <- round(summary(lm(hycom_dat$bot_temp~data3$Temperature.CTD.data))$adj.r.squared,2)
+s_rsq <- round(summary(lm(hycom_dat$bot_sal~data3$Salinity.CTD.data))$adj.r.squared,2)
+
+plot(data3$Temperature.CTD.data,hycom_dat$bot_temp,asp=1)
+abline(0,1,lty=1,col=2)
+mtext(bquote(paste(R^2, ' = ', .(t_rsq))),
+      adj=1)
+
+plot(data3$Salinity.CTD.data,hycom_dat$bot_sal,asp=1)
+abline(0,1,lty=1,col=2)
+mtext(bquote(paste(R^2, ' = ', .(s_rsq))),
+      adj=1)
+
+quant <- .99
+strat_n_col <- colorRampPalette(c('dodgerblue4','deepskyblue3','lightskyblue1'))
+strat_p_col <- colorRampPalette(c('rosybrown1','tomato2','red4'))
+
+resid_t <- hycom_dat$bot_temp-data3$Temperature.CTD.data
+tr_breaks <- pretty(resid_t[which(resid_t<=quantile(resid_t,quant,na.rm=T))],n=20)
+tr <- cut(resid_t,tr_breaks)
+if(any(tr_breaks==0)){
+  tr_breaks <- pretty(resid_t,n=20)
+  tr_cols <- c(strat_n_col(length(which(tr_breaks<0))),
+                   strat_p_col(length(which(tr_breaks>0))))
+}else{
+  tr_cols <- rev(strat_p_col(length(tr_breaks)-1))  
+}
+
+resid_s <- hycom_dat$bot_sal-data3$Salinity.CTD.data
+sr_breaks <- pretty(resid_s[which(resid_t<=quantile(resid_t,quant,na.rm=T))],n=20)
+sr <- cut(resid_s,sr_breaks)
+if(any(sr_breaks==0)){
+  sr_breaks <- pretty(resid_s,n=20)
+  sr_cols <- c(strat_n_col(length(which(sr_breaks<0))),
+                   strat_p_col(length(which(sr_breaks>0))))
+}else{
+  sr_cols <- rev(strat_p_col(length(sr_breaks)-1))  
+}
+
+
+
+plot(data3$Longitude.Decimal,data3$Latitude.Decimal,
+     bg=tr_cols[tr],pch=21,asp=1)
+
+plot(data3$Longitude.Decimal,data3$Latitude.Decimal,
+     bg=sr_cols[sr],pch=21,asp=1)
