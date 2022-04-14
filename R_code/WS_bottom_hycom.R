@@ -65,15 +65,23 @@ for(i in 1:length(ind_time)){
 t_rsq <- round(summary(lm(hycom_dat$bot_temp~data3$Temperature.CTD.data))$adj.r.squared,2)
 s_rsq <- round(summary(lm(hycom_dat$bot_sal~data3$Salinity.CTD.data))$adj.r.squared,2)
 
-plot(data3$Temperature.CTD.data,hycom_dat$bot_temp,asp=1)
+setwd('~/Documents/R/Github/waltonsmith/figures')
+png(paste0(cruise,'_bottom_bias2.png'), height = 8, width = 4, units = 'in', res=300)
+par(mfrow=c(2,1))
+plot(data3$Temperature.CTD.data,hycom_dat$bot_temp,
+     xlab='Walton Smith',ylab='HYCOM',asp=1,las=1)
+mtext('Bottom temperature bias',adj=0)
 abline(0,1,lty=1,col=2)
 mtext(bquote(paste(R^2, ' = ', .(t_rsq))),
       adj=1)
 
-plot(data3$Salinity.CTD.data,hycom_dat$bot_sal,asp=1)
+plot(data3$Salinity.CTD.data,hycom_dat$bot_sal,
+     xlab='Walton Smith',ylab='HYCOM',asp=1,las=1)
+mtext('Bottom salinity bias',adj=0)
 abline(0,1,lty=1,col=2)
 mtext(bquote(paste(R^2, ' = ', .(s_rsq))),
       adj=1)
+dev.off()
 
 quant <- .99
 strat_n_col <- colorRampPalette(c('dodgerblue4','deepskyblue3','lightskyblue1'))
@@ -91,7 +99,7 @@ if(any(tr_breaks==0)){
 }
 
 resid_s <- hycom_dat$bot_sal-data3$Salinity.CTD.data
-sr_breaks <- pretty(resid_s[which(resid_t<=quantile(resid_t,quant,na.rm=T))],n=20)
+sr_breaks <- pretty(resid_s[which(resid_s<=quantile(resid_s,quant,na.rm=T))],n=20)
 sr <- cut(resid_s,sr_breaks)
 if(any(sr_breaks==0)){
   sr_breaks <- pretty(resid_s,n=20)
@@ -119,7 +127,7 @@ mtext('Bottom temperature bias (HYCOM - WS observations)',adj=1)
 
 info<- setupLegend()
 plot(data3$Longitude.Decimal,data3$Latitude.Decimal,
-     bg=sr_cols[sr],pch=21,asp=1,cex=1.5,
+     bg=sr_cols[as.numeric(sr)],pch=21,asp=1,cex=1.5,
      xlab='Longitude',ylab='Latitude',las=1)
 plot(world,col='gray70',add=T)
 contour(topo_lon,topo_lat,topo,add=T,levels=c(-100,-50,-25,-10),col='gray40')
