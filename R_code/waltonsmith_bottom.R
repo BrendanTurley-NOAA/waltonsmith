@@ -43,11 +43,12 @@ world <- crop(world, extent(-86, -79, 24.5, 28))
 ### colorpalettes
 ### breaks and colors
 temp_col <- colorRampPalette(c(1,'purple','darkorange','gold'))
-sal_col <- colorRampPalette(c('purple4','dodgerblue4','seagreen3','khaki1'))
+sal_col <- colorRampPalette(c('midnightblue','dodgerblue4','seagreen3','khaki1'))
 chl_col <- colorRampPalette(c('honeydew2','darkseagreen3','forestgreen','darkslategrey'))
 ox.col1 <- colorRampPalette(c(1,'firebrick4','red'))
 ox.col2 <- colorRampPalette(c('darkgoldenrod4','goldenrod2','gold'))
 ox.col3 <- colorRampPalette(c('dodgerblue4','deepskyblue2','cadetblue1'))
+ex_col <- colorRampPalette(c('gray20','dodgerblue4','indianred3','gold1'))
 
 
 
@@ -202,4 +203,49 @@ mtext(paste('Note: Data are early release and subject to further QA/QC, \nplease
       outer=T,line=2,side=1,col='red',font=2,at=.01,adj=0,cex=.75)
 dev.off()
 
+
+
+
+### other nutrients
+ex_ind <- grep('NO3',names(data3),ignore.case = T)
+ex_ind <- ex_ind[1]
+bubblePlot(data3$Longitude.Decimal,data3$Latitude.Decimal,data3[,ex_ind],asp=1)
+
+ex_ind <- grep('NO3',names(data3),ignore.case = T)
+ex_ind <- ex_ind[2]
+bubblePlot(data3$Longitude.Decimal,data3$Latitude.Decimal,data3[,ex_ind],asp=1)
+
+ex_ind <- grep('nh4',names(data3),ignore.case = T)
+bubblePlot(data3$Longitude.Decimal,data3$Latitude.Decimal,data3[,ex_ind],asp=1)
+
+ex_ind <- grep('no2',names(data3),ignore.case = T)
+ex_ind <- ex_ind[2]
+bubblePlot(data3$Longitude.Decimal,data3$Latitude.Decimal,data3[,ex_ind],asp=1)
+
+ex_ind <- grep('PO4',names(data3),ignore.case = T)
+bubblePlot(data3$Longitude.Decimal,data3$Latitude.Decimal,data3[,ex_ind],asp=1)
+
+### only stations at surface
+ind <- which(data$Depth==0)
+data4 <- data[ind,]
+st_rm <- c('2','3','6.5','MR','9','9.5','10','12','18','21/LK','EK MID','EK OFF','WS','KW1','KW2')
+data5 <- data4[!is.element(data4$Station,st_rm),]
+
+ex_ind <- grep('NO3',names(data4),ignore.case = T)
+ex_ind <- ex_ind[1]
+bubblePlot(data4$Longitude.Decimal,data4$Latitude.Decimal,data4[,ex_ind],asp=1)
+
+ex_ind <- grep('NO3',names(data4),ignore.case = T)
+ex_ind <- ex_ind[2]
+bubblePlot(data4$Longitude.Decimal,data4$Latitude.Decimal,data4[,ex_ind],asp=1)
+
+ex_ind <- grep('nh4',names(data4),ignore.case = T)
+bubblePlot(data4$Longitude.Decimal,data4$Latitude.Decimal,data4[,ex_ind],asp=1)
+
+ex_ind <- grep('no2',names(data4),ignore.case = T)
+ex_ind <- ex_ind[2]
+bubblePlot(data4$Longitude.Decimal,data4$Latitude.Decimal,data4[,ex_ind],asp=1)
+
+ex_ind <- grep('PO4',names(data4),ignore.case = T)
+bubblePlot(data4$Longitude.Decimal,data4$Latitude.Decimal,data4[,ex_ind],asp=1)
 
