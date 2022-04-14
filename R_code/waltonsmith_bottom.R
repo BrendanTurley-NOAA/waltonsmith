@@ -125,7 +125,7 @@ cols <- c(ox.col1(length(breaks[breaks<2])),
 
 
 ### ----------------- plots -----------------
-setwd("~/Desktop/professional/projects/Postdoc_FL/figures")
+setwd('~/Documents/R/Github/waltonsmith/figures')
 png(paste0(cruise,'_bottom.png'), height = 11, width = 4, units = 'in', res=300)
 par(mfrow=c(3,1),mar=c(4.5,4,2,1),oma=c(4,1,4,1))
 imagePlot(temp_kriged$x,

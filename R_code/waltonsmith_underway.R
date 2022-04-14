@@ -163,7 +163,7 @@ adj <- .1
 xlims <- c(min(orig$lon,na.rm=T)-adj, max(orig$lon,na.rm=T)+adj)
 ylims <- c(min(orig$lat,na.rm=T)-adj, max(orig$lat,na.rm=T)+adj)
 
-setwd("~/Desktop/professional/projects/Postdoc_FL/figures")
+setwd('~/Documents/R/Github/waltonsmith/figures')
 png(paste0(cruise,'_underway.png'), height = 11, width = 4, units = 'in', res=300)
 par(mfrow=c(3,1),mar=c(4.5,4,2,1),oma=c(4,1,4,1))
 imagePlot(temp_kriged$x,
