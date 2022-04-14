@@ -94,7 +94,7 @@ underway <- underway[seq(1,nrow(underway),8),]
 ### colorpalettes
 ### colors are modified versions of recommended oceanography color schemes: https://cran.r-project.org/web/packages/cmocean/vignettes/cmocean.html
 temp_col <- colorRampPalette(c('gray20','purple','darkorange','gold'))
-sal_col <- colorRampPalette(c('purple4','dodgerblue4','seagreen3','khaki1'))
+sal_col <- colorRampPalette(c('midnightblue','dodgerblue4','seagreen3','khaki1'))
 chl_col <- colorRampPalette(c('honeydew2','darkseagreen3','forestgreen','darkslategrey'))
 
 
