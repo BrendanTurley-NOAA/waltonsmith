@@ -121,7 +121,7 @@ if(min(chl_kriged$z,na.rm=T)<min(underway$chl,na.rm=T)){
 }
 
 ### color and contour breaks
-chl_breaks <- pretty(underway$chl,n=15)
+chl_breaks <- pretty(underway$chl,n=20)
 chl_cols <- chl_col(length(chl_breaks)-1)
 
 
@@ -137,7 +137,7 @@ if(min(sal_kriged$z,na.rm=T)<min(underway$sal,na.rm=T)){
   sal_kriged$z[which(sal_kriged$z<min(underway$sal,na.rm=T))] <- min(underway$sal,na.rm=T)
 }
 
-sal_breaks <- pretty(underway$sal,n=15)
+sal_breaks <- pretty(underway$sal,n=20)
 sal_cols <- sal_col(length(sal_breaks)-1)
 
 
@@ -153,7 +153,7 @@ if(min(temp_kriged$z,na.rm=T)<min(underway$temp,na.rm=T)){
   temp_kriged$z[which(temp_kriged$z<min(underway$temp,na.rm=T))] <- min(underway$temp,na.rm=T)
 }
 
-temp_breaks <- pretty(underway$temp,n=15)
+temp_breaks <- pretty(underway$temp,n=20)
 temp_cols <- temp_col(length(temp_breaks)-1)
 
 
@@ -173,16 +173,16 @@ imagePlot(temp_kriged$x,
           xlab='',ylab='',las=1,
           xlim=xlims,ylim=ylims,
           nlevel=length(cols),legend.width=.7,legend.mar=3)
-contour(temp_kriged$x,
-        temp_kriged$y,
-        temp_kriged$z,
-        levels=temp_breaks,add=T)
+# contour(temp_kriged$x,
+#         temp_kriged$y,
+#         temp_kriged$z,
+#         levels=temp_breaks,add=T)
 # image(temp_SE,add=T,breaks=quantile(temp_SE$z,c(.6,1),na.rm=T),col='white')
 image(chl_SE,add=T,breaks=quantile(chl_SE$z,c(.3,1),na.rm=T),col='white') # chlorophyll standard error used to mask surface with SE greater than arbitrary threshold; can be adjusted for individual cruises
 image(topo_lon,topo_lat,topo,breaks=c(-1,100),col='white',add=T) # mask surface values that are in less than 1 meter depth
 plot(world,col='gray70',add=T)
 contour(topo_lon,topo_lat,topo,add=T,levels=c(-100,-50,-25,-10),col='gray40')
-lines(orig$lon,orig$lat,col='green',lwd=1) ### plot track line
+lines(orig$lon,orig$lat,col='green',lwd=.5) ### plot track line
 mtext(expression(paste('Longitude (',degree,'W)')),1,line=3,cex=.75)
 mtext(expression(paste('Latitude (',degree,'N)')),2,line=3,cex=.75)
 mtext(expression(paste('Surface Temperature (',degree,'F)')),adj=1,cex=.75)
@@ -195,16 +195,16 @@ imagePlot(sal_kriged$x,
           xlab='',ylab='',las=1,
           xlim=xlims,ylim=ylims,
           nlevel=length(cols),legend.width=.7,legend.mar=3)
-contour(sal_kriged$x,
-        sal_kriged$y,
-        sal_kriged$z,
-        levels=sal_breaks,add=T)
+# contour(sal_kriged$x,
+#         sal_kriged$y,
+#         sal_kriged$z,
+#         levels=sal_breaks,add=T)
 # image(sal_SE,add=T,breaks=quantile(sal_SE$z,c(.4,1),na.rm=T),col='white')
 image(chl_SE,add=T,breaks=quantile(chl_SE$z,c(.3,1),na.rm=T),col='white')
 image(topo_lon,topo_lat,topo,breaks=c(-1,100),col='white',add=T)
 plot(world,col='gray70',add=T)
 contour(topo_lon,topo_lat,topo,add=T,levels=c(-100,-50,-25,-10),col='gray40')
-lines(orig$lon,orig$lat,col='magenta',lwd=1)
+lines(orig$lon,orig$lat,col='magenta',lwd=.5)
 mtext(expression(paste('Longitude (',degree,'W)')),1,line=3,cex=.75)
 mtext(expression(paste('Latitude (',degree,'N)')),2,line=3,cex=.75)
 mtext('Surface Salinity (PSU)',adj=1,cex=.75)
@@ -217,16 +217,16 @@ imagePlot(chl_kriged$x,
           xlab='',ylab='',las=1,
           xlim=xlims,ylim=ylims,
           nlevel=length(cols),legend.width=.7,legend.mar=3)
-contour(chl_kriged$x,
-        chl_kriged$y,
-        chl_kriged$z,
-        levels=chl_breaks,add=T)
+# contour(chl_kriged$x,
+#         chl_kriged$y,
+#         chl_kriged$z,
+#         levels=chl_breaks,add=T)
 image(chl_SE,add=T,breaks=quantile(chl_SE$z,c(.3,1),na.rm=T),col='white')
 image(topo_lon,topo_lat,topo,breaks=c(-1,100),col='white',add=T)
 # plot(FL,col='gray70',add=T)
 plot(world,col='gray70',add=T)
 contour(topo_lon,topo_lat,topo,add=T,levels=c(-100,-50,-25,-10),col='gray40')
-lines(orig$lon,orig$lat,col='purple',lwd=1)
+lines(orig$lon,orig$lat,col='purple',lwd=.5)
 mtext(expression(paste('Longitude (',degree,'W)')),1,line=3,cex=.75)
 mtext(expression(paste('Latitude (',degree,'N)')),2,line=3,cex=.75)
 mtext('Surface Chlorophyll Fluorescence (RFU)',adj=1,cex=.75)
