@@ -87,7 +87,7 @@ if(any(tr_breaks==0)){
   tr_cols <- c(strat_n_col(length(which(tr_breaks<0))),
                    strat_p_col(length(which(tr_breaks>0))))
 }else{
-  tr_cols <- rev(strat_p_col(length(tr_breaks)-1))  
+  tr_cols <- (strat_p_col(length(tr_breaks)-1))  
 }
 
 resid_s <- hycom_dat$bot_sal-data3$Salinity.CTD.data
@@ -98,13 +98,31 @@ if(any(sr_breaks==0)){
   sr_cols <- c(strat_n_col(length(which(sr_breaks<0))),
                    strat_p_col(length(which(sr_breaks>0))))
 }else{
-  sr_cols <- rev(strat_p_col(length(sr_breaks)-1))  
+  sr_cols <- (strat_p_col(length(sr_breaks)-1))  
 }
 
 
+hist(resid_t)
+hist(resid_s)
 
+setwd('~/Documents/R/Github/waltonsmith/figures')
+png(paste0(cruise,'_bottom_bias.png'), height = 12, width = 7, units = 'in', res=300)
+par(mfrow=c(2,1))
+info<- setupLegend()
 plot(data3$Longitude.Decimal,data3$Latitude.Decimal,
-     bg=tr_cols[tr],pch=21,asp=1)
+     bg=tr_cols[as.numeric(tr)],pch=21,asp=1,cex=1.5,
+     xlab='Longitude',ylab='Latitude',las=1)
+plot(world,col='gray70',add=T)
+contour(topo_lon,topo_lat,topo,add=T,levels=c(-100,-50,-25,-10),col='gray40')
+addLegend(info,col=tr_cols,zlim=range(resid_t))
+mtext('Bottom temperature bias (HYCOM - WS observations)',adj=1)
 
+info<- setupLegend()
 plot(data3$Longitude.Decimal,data3$Latitude.Decimal,
-     bg=sr_cols[sr],pch=21,asp=1)
+     bg=sr_cols[sr],pch=21,asp=1,cex=1.5,
+     xlab='Longitude',ylab='Latitude',las=1)
+plot(world,col='gray70',add=T)
+contour(topo_lon,topo_lat,topo,add=T,levels=c(-100,-50,-25,-10),col='gray40')
+addLegend(info,col=sr_cols,zlim=range(resid_s))
+mtext('Bottom salinity bias (HYCOM - WS observations)',adj=1)
+dev.off()
