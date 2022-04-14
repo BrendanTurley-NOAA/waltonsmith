@@ -114,7 +114,7 @@ hist(resid_t)
 hist(resid_s)
 
 setwd('~/Documents/R/Github/waltonsmith/figures')
-png(paste0(cruise,'_bottom_bias.png'), height = 12, width = 7, units = 'in', res=300)
+png(paste0(cruise,'_bottom_bias.png'), height = 12, width = 6, units = 'in', res=300)
 par(mfrow=c(2,1))
 info<- setupLegend()
 plot(data3$Longitude.Decimal,data3$Latitude.Decimal,
@@ -123,7 +123,7 @@ plot(data3$Longitude.Decimal,data3$Latitude.Decimal,
 plot(world,col='gray70',add=T)
 contour(topo_lon,topo_lat,topo,add=T,levels=c(-100,-50,-25,-10),col='gray40')
 addLegend(info,col=tr_cols,zlim=range(resid_t))
-mtext('Bottom temperature bias (HYCOM - WS observations)',adj=1)
+mtext('Bottom temperature bias (HYCOM - observations)',adj=1)
 
 info<- setupLegend()
 plot(data3$Longitude.Decimal,data3$Latitude.Decimal,
@@ -132,5 +132,5 @@ plot(data3$Longitude.Decimal,data3$Latitude.Decimal,
 plot(world,col='gray70',add=T)
 contour(topo_lon,topo_lat,topo,add=T,levels=c(-100,-50,-25,-10),col='gray40')
 addLegend(info,col=sr_cols,zlim=range(resid_s))
-mtext('Bottom salinity bias (HYCOM - WS observations)',adj=1)
+mtext('Bottom salinity bias (HYCOM - observations)',adj=1)
 dev.off()
