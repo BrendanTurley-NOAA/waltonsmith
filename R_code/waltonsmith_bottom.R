@@ -225,6 +225,9 @@ bubblePlot(data3$Longitude.Decimal,data3$Latitude.Decimal,data3[,ex_ind],asp=1)
 ex_ind <- grep('PO4',names(data3),ignore.case = T)
 bubblePlot(data3$Longitude.Decimal,data3$Latitude.Decimal,data3[,ex_ind],asp=1)
 
+ex_ind <- grep('si',names(data3),ignore.case = T)
+bubblePlot(data3$Longitude.Decimal,data3$Latitude.Decimal,data3[,ex_ind],asp=1)
+
 ### only stations at surface
 ind <- which(data$Depth==0)
 data4 <- data[ind,]
