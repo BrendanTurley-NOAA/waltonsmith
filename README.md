@@ -11,4 +11,4 @@ Underdevelopment is interpolation that takes into consideration coastlines and b
 
 ![alt text](https://github.com/imaginaryfish/waltonsmith/blob/main/figures/WS22072_underway.png "latest underway data")
 
-![alt text](https://github.com/imaginaryfish/waltonsmith/blob/main/figures/WS22072_bottom.png "latest bottom data")
+![alt text](https://github.com/imaginaryfish/waltonsmith/blob/main/figures/WS22072_bottom2.png "latest bottom data")

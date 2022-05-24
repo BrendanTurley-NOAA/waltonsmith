@@ -96,7 +96,7 @@ if(min(temp_kriged2$z,na.rm=T)<min(data3$tempF,na.rm=T)){
   temp_kriged2$z[which(temp_kriged2$z<min(data3$tempF,na.rm=T))] <- min(data3$tempF,na.rm=T)
 }
 
-temp_breaks <- pretty(data3$tempF,n=30)
+temp_breaks <- pretty(data3$tempF,n=20)
 temp_cols <- temp_col(length(temp_breaks)-1)
 
 
@@ -116,7 +116,7 @@ if(min(sal_kriged2$z,na.rm=T)<min(data3[,sal_ind],na.rm=T)){
   sal_kriged2$z[which(sal_kriged2$z<min(data3[,sal_ind],na.rm=T))] <- min(data3[,sal_ind],na.rm=T)
 }
 
-sal_breaks <- pretty(data3[,sal_ind],n=30)
+sal_breaks <- pretty(data3[,sal_ind],n=20)
 sal_cols <- sal_col(length(sal_breaks)-1)
 
 
@@ -141,7 +141,7 @@ if(min(do_kriged2$z,na.rm=T)<min(data3[,oxy_ind])){
   do_kriged2$z[which(do_kriged2$z<min(data3[,oxy_ind]))] <- min(data3[,oxy_ind])
 }
 
-breaks <- pretty(data3[,oxy_ind],n=30)
+breaks <- pretty(data3[,oxy_ind],n=20)
 cols <- c(ox.col1(length(breaks[breaks<2])),
           ox.col2(length(breaks[breaks>=2 & breaks<3.5])),
           ox.col3(length(breaks[breaks>=3.5])-1))
@@ -162,8 +162,8 @@ imagePlot(temp_kriged2$x,
 #         temp_kriged2$y,
 #         temp_kriged2$z,
 #         levels=temp_breaks,add=T)
-# image(temp_se2,add=T,breaks=quantile(temp_se2$z,c(.4,1),na.rm=T),col='white')
-# image(topo_lon,topo_lat,topo,breaks=c(-1,100),col='white',add=T)
+image(temp_se2,add=T,breaks=quantile(temp_se2$z,c(.5,1),na.rm=T),col='white')
+image(topo_lon,topo_lat,topo,breaks=c(-1,100),col='white',add=T)
 plot(world,col='gray70',add=T)
 contour(topo_lon,topo_lat,topo,add=T,levels=c(-100,-50,-25,-10),col='gray40')
 points(data3$Longitude.Decimal,data3$Latitude.Decimal,pch=16,col='gray50',cex=.5)
@@ -182,8 +182,8 @@ imagePlot(sal_kriged2$x,
 #         sal_kriged2$y,
 #         sal_kriged2$z,
 #         levels=sal_breaks,add=T)
-# image(sal_se,add=T,breaks=quantile(sal_se$z,c(.4,1),na.rm=T),col='white')
-# image(topo_lon,topo_lat,topo,breaks=c(-1,100),col='white',add=T)
+image(sal_se2,add=T,breaks=quantile(sal_se2$z,c(.5,1),na.rm=T),col='white')
+image(topo_lon,topo_lat,topo,breaks=c(-1,100),col='white',add=T)
 plot(world,col='gray70',add=T)
 contour(topo_lon,topo_lat,topo,add=T,levels=c(-100,-50,-25,-10),col='gray40')
 points(data3$Longitude.Decimal,data3$Latitude.Decimal,pch=16,col='gray50',cex=.5)
@@ -202,8 +202,8 @@ imagePlot(do_kriged2$x,
 #         do_kriged2$y,
 #         do_kriged2$z,
 #         levels=breaks,add=T)
-# image(do_se2,add=T,breaks=quantile(do_se2$z,c(.4,1),na.rm=T),col='white')
-# image(topo_lon,topo_lat,topo,breaks=c(-2,100),col='white',add=T)
+image(do_se2,add=T,breaks=quantile(do_se2$z,c(.5,1),na.rm=T),col='white')
+image(topo_lon,topo_lat,topo,breaks=c(-2,100),col='white',add=T)
 plot(world,col='gray70',add=T)
 contour(topo_lon,topo_lat,topo,add=T,levels=c(-100,-50,-25,-10),col='gray40')
 points(data3$Longitude.Decimal,data3$Latitude.Decimal,pch=16,col='gray50',cex=.5)
