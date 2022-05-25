@@ -64,20 +64,43 @@ st_rm <- c('2','3','6.5','MR','9','9.5','10','12','18','21/LK','EK MID','EK OFF'
 data3 <- data2[!is.element(data2$Station,st_rm),]
 data3$Date.GMT <- mdy(data3$Date.GMT)
 
-adj <- .1
-resolution <- .01
-ctd.loc <- cbind(lon=data3$Longitude.Decimal,lat=data3$Latitude.Decimal)
-loc.grid <- list(lon=seq(min(data3$Longitude.Decimal,na.rm=T)-adj, max(data3$Longitude.Decimal,na.rm=T)+adj,resolution),
-                 lat=seq(min(data3$Latitude.Decimal,na.rm=T)-adj, max(data3$Latitude.Decimal,na.rm=T)+adj,resolution))
+
+### subset bathymetry
+adj1 <- mean(diff(topo_lon))
+adj2 <- mean(diff(topo_lat))
+ind_lat <- which(topo_lat<(max(data3$Latitude.Decimal,na.rm=T)+adj1) & topo_lat>(min(data3$Latitude.Decimal,na.rm=T)-adj1))
+ind_lon <- which(topo_lon<(max(data3$Longitude.Decimal,na.rm=T)+adj2) & topo_lon>(min(data3$Longitude.Decimal,na.rm=T)-adj2))
 ### bathymetry for spatial covariate model
-lon_i <- unlist(lapply(loc.grid$lon, function(x) which.min(abs(x-topo_lon))))
-lat_i <- unlist(lapply(loc.grid$lat, function(x) which.min(abs(x-topo_lat))))
-z <- (topo[lon_i,lat_i])
-z[which(z>0)] <- NA
-Z <- list(x=loc.grid$lon,y=loc.grid$lat,z=z)
+topo_lat2 <- topo_lat[ind_lat]
+topo_lon2 <- topo_lon[ind_lon]
+topo2 <- topo[ind_lon,ind_lat]
+topo2[which(topo2>0)] <- NA
+
+### locations for krig
+ctd.loc <- cbind(lon=data3$Longitude.Decimal,lat=data3$Latitude.Decimal)
+
+loc.grid <- list(lon=topo_lon2,
+                 lat=topo_lat2)
+Z <- list(x=loc.grid$lon,y=loc.grid$lat,z=topo2)
 
 xlims <- range(loc.grid$lon)
 ylims <- range(loc.grid$lat)
+
+### locations for krig
+# adj <- .1
+# resolution <- .01
+# ctd.loc <- cbind(lon=data3$Longitude.Decimal,lat=data3$Latitude.Decimal)
+# loc.grid <- list(lon=seq(min(data3$Longitude.Decimal,na.rm=T)-adj, max(data3$Longitude.Decimal,na.rm=T)+adj,resolution),
+#                  lat=seq(min(data3$Latitude.Decimal,na.rm=T)-adj, max(data3$Latitude.Decimal,na.rm=T)+adj,resolution))
+# ### bathymetry for spatial covariate model
+# lon_i <- unlist(lapply(loc.grid$lon, function(x) which.min(abs(x-topo_lon))))
+# lat_i <- unlist(lapply(loc.grid$lat, function(x) which.min(abs(x-topo_lat))))
+# z <- (topo2[lon_i,lat_i])
+# z[which(z>0)] <- NA
+# Z <- list(x=loc.grid$lon,y=loc.grid$lat,z=z)
+# 
+# xlims <- range(loc.grid$lon)
+# ylims <- range(loc.grid$lat)
 
 ### ----------------- Temperature krig -----------------
 temp_ind <- grep('temperature',names(data3),ignore.case = T)
