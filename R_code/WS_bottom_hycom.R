@@ -3,29 +3,60 @@ gc()
 
 library(fields)
 library(lubridate)
+library(raster)
 library(ncdf4)
+library(rgdal)
 
-################## geogrpahic scope
+### bathymetric data
+setwd("~/Desktop/professional/biblioteca/data")
+bathy <- nc_open('etopo1.nc')
+topo <- ncvar_get(bathy, 'Band1')
+topo_lat <- ncvar_get(bathy, 'lat')
+topo_lon <- ncvar_get(bathy, 'lon')
+nc_close(bathy)
+
+
+################## geographic scope
+lonbox_e <- -79 ### Florida Bay
+lonbox_w <- -86 ### mouth of Mississippi River
+latbox_n <- 38 ### northern coast
+latbox_s <- 24 ### remove the Keys
+
+ind_lat <- which(topo_lat<latbox_n & topo_lat>latbox_s)
+ind_lon <- which(topo_lon<lonbox_e & topo_lon>lonbox_w)
+
+topo_lat <- topo_lat[ind_lat]
+topo_lon <- topo_lon[ind_lon]
+topo <- topo[ind_lon,ind_lat]
+
+
+### load map
+setwd("~/Desktop/professional/biblioteca/data/shapefiles/gshhg-shp-2.3.7/GSHHS_shp/h/")
+world <- readOGR('GSHHS_h_L1.shp')
+world <- crop(world, extent(-86, -79, 24.5, 28))
+
+
+### load data
+setwd('~/Desktop/professional/projects/Postdoc_FL/data/walton_smith/')
+data <- read.csv('WS22141_SampleLog_Initial.csv')
+### cruise name for file naming
+cruise <- 'WS22141'
+### only stations at depth
+ind <- which(data$Depth!=0)
+data2 <- data[ind,]
+st_rm <- c('2','3','6.5','MR','9','9.5','10','12','16','18','21/LK','EK MID','EK OFF','WS','KW1','KW2')
+data3 <- data2[!is.element(data2$Station,st_rm),]
+# data3$Date.GMT <- mdy(data3$Date.GMT)
+data3$date <- mdy_hms(paste(data3$Date.GMT,data3$Time..GMT.))
+
+
+################## geographic scope for hycom
 lonbox_e <- -80.5 ### Florida Bay
 lonbox_e <- (lonbox_e + 360)
 lonbox_w <- -86 ### mouth of Mississippi River
 lonbox_w <- (lonbox_w + 360)
 latbox_n <- 30.5 ### northern coast
 latbox_s <- 24.5 ### remove the Keys
-
-
-setwd('~/Downloads')
-data <- read.csv('WS22072_Sample_log.csv')
-### cruise name for file naming
-cruise <- 'WS22072'
-### only stations at depth
-ind <- which(data$Depth!=0)
-data2 <- data[ind,]
-st_rm <- c('2','3','6.5','MR','9','9.5','10','12','18','21/LK','EK MID','EK OFF','WS','KW1','KW2')
-data3 <- data2[!is.element(data2$Station,st_rm),]
-# data3$Date.GMT <- mdy(data3$Date.GMT)
-data3$date <- mdy_hms(paste(data3$Date.GMT,data3$Time..GMT.))
-
 
 # https://tds.hycom.org/thredds/catalogs/GLBy0.08/expt_93.0.html
 ### now
@@ -84,11 +115,12 @@ mtext(bquote(paste(R^2, ' = ', .(s_rsq))),
 dev.off()
 
 quant <- .99
-strat_n_col <- colorRampPalette(c('dodgerblue4','deepskyblue3','lightskyblue1'))
-strat_p_col <- colorRampPalette(c('rosybrown1','tomato2','red4'))
+strat_n_col <- colorRampPalette(c('dodgerblue4','deepskyblue3','lightskyblue1','gray90'))
+strat_p_col <- colorRampPalette(c('gray90','rosybrown1','tomato2','red4'))
 
 resid_t <- hycom_dat$bot_temp-data3$Temperature.CTD.data
-tr_breaks <- pretty(resid_t[which(resid_t<=quantile(resid_t,quant,na.rm=T))],n=20)
+# tr_breaks <- pretty(resid_t[which(resid_t<=quantile(resid_t,quant,na.rm=T))],n=20)
+tr_breaks <- pretty(resid_t,n=20)
 tr <- cut(resid_t,tr_breaks)
 if(any(tr_breaks==0)){
   tr_breaks <- pretty(resid_t,n=20)
@@ -99,7 +131,8 @@ if(any(tr_breaks==0)){
 }
 
 resid_s <- hycom_dat$bot_sal-data3$Salinity.CTD.data
-sr_breaks <- pretty(resid_s[which(resid_s<=quantile(resid_s,quant,na.rm=T))],n=20)
+# sr_breaks <- pretty(resid_s[which(resid_s<=quantile(resid_s,quant,na.rm=T))],n=20)
+sr_breaks <- pretty(resid_s,n=20)
 sr <- cut(resid_s,sr_breaks)
 if(any(sr_breaks==0)){
   sr_breaks <- pretty(resid_s,n=20)
@@ -122,7 +155,7 @@ plot(data3$Longitude.Decimal,data3$Latitude.Decimal,
      xlab='Longitude',ylab='Latitude',las=1)
 plot(world,col='gray70',add=T)
 contour(topo_lon,topo_lat,topo,add=T,levels=c(-100,-50,-25,-10),col='gray40')
-addLegend(info,col=tr_cols,zlim=range(resid_t))
+addLegend(info,col=tr_cols,zlim=range(resid_t,na.rm=T))
 mtext('Bottom temperature bias (HYCOM - observations)',adj=1)
 
 info<- setupLegend()
@@ -131,6 +164,6 @@ plot(data3$Longitude.Decimal,data3$Latitude.Decimal,
      xlab='Longitude',ylab='Latitude',las=1)
 plot(world,col='gray70',add=T)
 contour(topo_lon,topo_lat,topo,add=T,levels=c(-100,-50,-25,-10),col='gray40')
-addLegend(info,col=sr_cols,zlim=range(resid_s))
+addLegend(info,col=sr_cols,zlim=range(resid_s,na.rm=T))
 mtext('Bottom salinity bias (HYCOM - observations)',adj=1)
 dev.off()
