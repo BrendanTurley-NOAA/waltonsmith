@@ -53,21 +53,21 @@ ex_col <- colorRampPalette(c('gray20','dodgerblue4','indianred3','gold1'))
 
 
 
-setwd('~/Downloads')
-data <- read.csv('WS22072_Sample_log.csv')
+setwd('~/Desktop/professional/projects/Postdoc_FL/data/walton_smith/')
+data <- read.csv('WS22141_SampleLog_Initial.csv')
 ### cruise name for file naming
-cruise <- 'WS22072'
+cruise <- 'WS22141'
 ### only stations at depth
 ind <- which(data$Depth!=0)
 data2 <- data[ind,]
-st_rm <- c('2','3','6.5','MR','9','9.5','10','12','18','21/LK','EK MID','EK OFF','WS','KW1','KW2')
+st_rm <- c('2','3','6.5','MR','9','9.5','10','12','16','18','21/LK','EK MID','EK OFF','WS','KW1','KW2')
 data3 <- data2[!is.element(data2$Station,st_rm),]
 data3$Date.GMT <- mdy(data3$Date.GMT)
 
 
 ### subset bathymetry
-adj1 <- mean(diff(topo_lon))
-adj2 <- mean(diff(topo_lat))
+adj1 <- mean(diff(topo_lon))*5
+adj2 <- mean(diff(topo_lat))*5
 ind_lat <- which(topo_lat<(max(data3$Latitude.Decimal,na.rm=T)+adj1) & topo_lat>(min(data3$Latitude.Decimal,na.rm=T)-adj1))
 ind_lon <- which(topo_lon<(max(data3$Longitude.Decimal,na.rm=T)+adj2) & topo_lon>(min(data3$Longitude.Decimal,na.rm=T)-adj2))
 ### bathymetry for spatial covariate model
@@ -145,6 +145,9 @@ sal_cols <- sal_col(length(sal_breaks)-1)
 
 ### ----------------- DO krig -----------------
 oxy_ind <- grep('oxygen',names(data3),ignore.case = T)
+if(length(oxy_ind>1)){
+  oxy_ind <- oxy_ind[1]
+}
 # my.krig <- spatialProcess(ctd.loc,data3[,oxy_ind])
 # do_kriged <- predictSurface(my.krig, loc.grid, extrap=T)
 # do_se <- predictSurfaceSE(my.krig, loc.grid, extrap=T)
@@ -185,7 +188,7 @@ imagePlot(temp_kriged2$x,
 #         temp_kriged2$y,
 #         temp_kriged2$z,
 #         levels=temp_breaks,add=T)
-image(temp_se2,add=T,breaks=quantile(temp_se2$z,c(.5,1),na.rm=T),col='white')
+image(temp_se2,add=T,breaks=quantile(temp_se2$z,c(.6,1),na.rm=T),col='white')
 image(topo_lon,topo_lat,topo,breaks=c(-1,100),col='white',add=T)
 plot(world,col='gray70',add=T)
 contour(topo_lon,topo_lat,topo,add=T,levels=c(-100,-50,-25,-10),col='gray40')
@@ -205,7 +208,7 @@ imagePlot(sal_kriged2$x,
 #         sal_kriged2$y,
 #         sal_kriged2$z,
 #         levels=sal_breaks,add=T)
-image(sal_se2,add=T,breaks=quantile(sal_se2$z,c(.5,1),na.rm=T),col='white')
+image(sal_se2,add=T,breaks=quantile(sal_se2$z,c(.6,1),na.rm=T),col='white')
 image(topo_lon,topo_lat,topo,breaks=c(-1,100),col='white',add=T)
 plot(world,col='gray70',add=T)
 contour(topo_lon,topo_lat,topo,add=T,levels=c(-100,-50,-25,-10),col='gray40')
@@ -225,7 +228,7 @@ imagePlot(do_kriged2$x,
 #         do_kriged2$y,
 #         do_kriged2$z,
 #         levels=breaks,add=T)
-image(do_se2,add=T,breaks=quantile(do_se2$z,c(.5,1),na.rm=T),col='white')
+image(do_se2,add=T,breaks=quantile(do_se2$z,c(.6,1),na.rm=T),col='white')
 image(topo_lon,topo_lat,topo,breaks=c(-2,100),col='white',add=T)
 plot(world,col='gray70',add=T)
 contour(topo_lon,topo_lat,topo,add=T,levels=c(-100,-50,-25,-10),col='gray40')
@@ -248,7 +251,7 @@ mtext(paste('Note: Data are early release and subject to further QA/QC, \nplease
       outer=T,line=2,side=1,col='red',font=2,at=.01,adj=0,cex=.75)
 dev.off()
 
-
+file.copy(paste0(cruise,'_bottom2.png'),'latest_bottom.png')
 
 # 
 # ### other nutrients
