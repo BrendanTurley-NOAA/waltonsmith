@@ -42,7 +42,7 @@ world <- crop(world, extent(-86, -79, 24.5, 28))
 
 ### colorpalettes
 ### breaks and colors
-temp_col <- colorRampPalette(c('gray20','purple','darkorange','gold'))
+temp_col <- colorRampPalette(c(1,'purple','darkorange','gold'))
 sal_col <- colorRampPalette(c('midnightblue','dodgerblue4','seagreen3','khaki1'))
 chl_col <- colorRampPalette(c('honeydew2','darkseagreen3','forestgreen','darkslategrey'))
 ox.col1 <- colorRampPalette(c(1,'firebrick4','red'))
@@ -53,15 +53,35 @@ ex_col <- colorRampPalette(c('gray20','dodgerblue4','indianred3','gold1'))
 
 
 setwd('~/Downloads')
-data <- read.csv('WS22072_Sample_log.csv')
-### cruise name for file naming
-cruise <- 'WS22072'
+data <- read.csv('20220426_WS_samplelog_master2.csv')
+data$Longitude.Decimal <- -abs(data$Longitude.Decimal)
+data$Date..GMT. <- mdy(data$Date..GMT.)
+data$Temperature <- as.numeric(data$Temperature)
+data$Salinity <- as.numeric(data$Salinity)
+data$do_mgl <- do_convert(data$Oxygen..umol.L.)
 ### only stations at depth
 ind <- which(data$Depth!=0)
 data2 <- data[ind,]
-st_rm <- c('2','3','6.5','MR','9','9.5','10','12','18','21/LK','EK MID','EK OFF','WS','KW1','KW2')
-data3 <- data2[!is.element(data2$Station,st_rm),]
-data3$Date.GMT <- mdy(data3$Date.GMT)
+### only SWFL, no FL Keys!
+data3 <- data2[which(data2$Longitude.Decimal<(-81) & data2$Latitude.Decimal>25),]
+
+table(data3$Cruise,month(data3$Date..GMT.))
+table(year(data3$Date..GMT.),month(data3$Date..GMT.))
+boxplot(data3$Temperature~month(data3$Date..GMT.))
+boxplot(data3$Salinity~month(data3$Date..GMT.))
+boxplot(data3$do_mgl~month(data3$Date..GMT.))
+
+data3 <- data3[which(data3$Cruise=='WS21093'),]
+data3 <- data3[which(data3$Rank!=3984),]
+if(any(table(data3$Station)>1)){
+  ex <- names(which(table(data3$Station)>1))
+  for(i in ex){
+    ind <- which(data3$Station==i)
+    tmp <- data3[ind,]
+    ex_i <- which.min(tmp$Depth)
+    data3 <- data3[-ind[ex_i],]
+    }
+}
 
 adj <- .1
 resolution <- .01
@@ -77,6 +97,8 @@ data3$tempF <- NISTdegCtOdegF(data3[,temp_ind])
 my.krig <- spatialProcess(ctd.loc,data3$tempF)
 temp_kriged <- predictSurface(my.krig, loc.grid, extrap=T)
 temp_se <- predictSurfaceSE(my.krig, loc.grid, extrap=T)
+
+temp_kriged$z[which(temp_se$z>quantile(temp_se$z,c(.4,1))[1])] <- NA
 
 if(max(temp_kriged$z,na.rm=T)>max(data3$tempF,na.rm=T)){
   temp_kriged$z[which(temp_kriged$z>max(data3$tempF,na.rm=T))] <- max(data3$tempF,na.rm=T)
@@ -94,6 +116,9 @@ sal_ind <- grep('salinity',names(data3),ignore.case = T)
 my.krig <- spatialProcess(ctd.loc,data3[,sal_ind])
 sal_kriged <- predictSurface(my.krig, loc.grid, extrap=T)
 sal_se <- predictSurfaceSE(my.krig, loc.grid, extrap=T)
+
+sal_kriged$z[which(sal_se$z>quantile(sal_se$z,c(.4,1))[1])] <- NA
+
 
 if(max(sal_kriged$z,na.rm=T)>max(data3[,sal_ind],na.rm=T)){
   sal_kriged$z[which(sal_kriged$z>max(data3[,sal_ind],na.rm=T))] <- max(data3[,sal_ind],na.rm=T)
@@ -140,8 +165,8 @@ imagePlot(temp_kriged$x,
 #         temp_kriged$y,
 #         temp_kriged$z,
 #         levels=temp_breaks,add=T)
-image(temp_se,add=T,breaks=quantile(temp_se$z,c(.4,1),na.rm=T),col='white')
-image(topo_lon,topo_lat,topo,breaks=c(-1,100),col='white',add=T)
+# image(temp_se,add=T,breaks=quantile(temp_se$z,c(.4,1),na.rm=T),col='white')
+image(topo_lon,topo_lat,topo,breaks=c(-2,100),col='white',add=T)
 plot(world,col='gray70',add=T)
 contour(topo_lon,topo_lat,topo,add=T,levels=c(-100,-50,-25,-10),col='gray40')
 points(data3$Longitude.Decimal,data3$Latitude.Decimal,pch=16,col='gray50',cex=.5)
@@ -180,7 +205,7 @@ imagePlot(do_kriged$x,
 #         do_kriged$y,
 #         do_kriged$z,
 #         levels=breaks,add=T)
-image(do_se,add=T,breaks=quantile(do_se$z,c(.4,1),na.rm=T),col='white')
+# image(do_se,add=T,breaks=quantile(do_se$z,c(.4,1),na.rm=T),col='white')
 image(topo_lon,topo_lat,topo,breaks=c(-2,100),col='white',add=T)
 plot(world,col='gray70',add=T)
 contour(topo_lon,topo_lat,topo,add=T,levels=c(-100,-50,-25,-10),col='gray40')

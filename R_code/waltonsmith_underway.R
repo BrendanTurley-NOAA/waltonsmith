@@ -1,6 +1,7 @@
 rm(list=ls())
 gc()
 
+library(e1071)
 library(fields)
 library(lubridate)
 library(ncdf4)
@@ -43,12 +44,12 @@ world <- crop(world, extent(-86, -79, 24.5, 28))
 
 
 ### load underway data
-setwd('~/Downloads/')
-underway <- read.csv('WS22072_out.csv')
+setwd('~/Desktop/professional/projects/Postdoc_FL/data/walton_smith/')
+underway <- read.csv('WS22141_Underway.csv')
 ### cruise name for file naming
-cruise <- 'WS22072'
-### make date times
-underway$time <- dmy_hms(underway$time)
+cruise <- 'WS22141'
+### make date times; check format b/c can change between cruises
+underway$time <- mdy_hm(underway$time)
 ### rename out of convenience
 underway$lon <- underway$lon.dd
 underway$lat <- underway$lat.dd
@@ -62,26 +63,39 @@ underway$sal.tsg[which(underway$sal.tsg<20)] <- NA
 underway <- underway[which(underway$sog>2),]
 
 ### the convolution filters smooths the data; excessively noisy data can either slow down the algorithm and make hard to interpret krigged surfaces; smoothing span is arbitrary and may be superfluous depending upon individual cruises
+n <- 5 # convolution filter smoothing per min
 ### chlorophyll
-underway$chl <- filter(underway$chl.c3p.raw,rep(1/5,5),'convolution')
-# plot(underway$chl.c3p.raw,typ='l')
-# points(underway$chl,col=2,typ='l')
+underway$chl <- filter(underway$chl.c3p.raw,rep(1/n,n),'convolution')
+# plot(underway$time,underway$chl.c3p.raw,typ='l')
+# points(underway$time,underway$chl,col=2,typ='l')
 # plot(underway$chl.c3p.raw,underway$chl)
+### if skewed and not normal, log transform
+ks_res <- ks.test(underway$chl, 'pnorm')
+hist(underway$chl)
+chl_skw <- skewness(underway$chl,na.rm=T)
+if(chl_skw>1 & ks_res$p.value<.05){
+  underway$chl <- log10(underway$chl)  
+  print(paste('skewness =',round(chl_skw,2)))
+  print(ks_res)
+  log_c <- T
+}
 
 ### scaling with 1 as the max; not used anymore
 # underway$chl <- underway$chl/max(underway$chl,na.rm=T)
 
 ### salinity
-underway$sal <- filter(underway$sal.tsg,rep(1/5,5),'convolution')
-# plot(underway$sal.tsg,typ='l')
-# points(underway$sal,col=2,typ='l')
+underway$sal <- filter(underway$sal.tsg,rep(1/n,n),'convolution')
+# plot(underway$time,underway$sal.tsg,typ='l')
+# points(underway$time,underway$sal,col=2,typ='l')
 # plot(underway$sal.tsg,underway$sal)
+# hist(underway$sal)
 
 ### temperature
-underway$tempC <- filter(underway$temp.c3p,rep(1/5,5),'convolution')
-# plot(underway$temp.c3p,typ='l')
-# points(underway$tempC,col=2,typ='l')
+underway$tempC <- filter(underway$temp.c3p,rep(1/n,n),'convolution')
+# plot(underway$time,underway$temp.c3p,typ='l')
+# points(underway$time,underway$tempC,col=2,typ='l')
 # plot(underway$temp.c3p,underway$tempC)
+# hist(underway$tempC)
 
 ### convert from Celsius to Fahrenheit
 underway$temp <- NISTdegCtOdegF(underway$tempC)
@@ -113,28 +127,37 @@ chl_kriged <- predictSurface(my.krig, loc.grid, extrap=TRUE)
 chl_SE <- predictSurfaceSE(my.krig, loc.grid, extrap=TRUE)
 
 ### corrects the krigged min and max to observed min and max
-if(max(chl_kriged$z,na.rm=T)>max(underway$chl,na.rm=T)){
-  chl_kriged$z[which(chl_kriged$z>max(underway$chl,na.rm=T))] <- max(underway$chl,na.rm=T)
+if(max(chl_kriged$z,na.rm=T)>=max(underway$chl,na.rm=T)){
+  chl_kriged$z[which(chl_kriged$z>=max(underway$chl,na.rm=T))] <- max(underway$chl,na.rm=T)
 }
-if(min(chl_kriged$z,na.rm=T)<min(underway$chl,na.rm=T)){
-  chl_kriged$z[which(chl_kriged$z<min(underway$chl,na.rm=T))] <- min(underway$chl,na.rm=T)
+if(min(chl_kriged$z,na.rm=T)<=min(underway$chl,na.rm=T)){
+  chl_kriged$z[which(chl_kriged$z<=min(underway$chl,na.rm=T))] <- min(underway$chl,na.rm=T)
 }
 
 ### color and contour breaks
 chl_breaks <- pretty(underway$chl,n=20)
 chl_cols <- chl_col(length(chl_breaks)-1)
 
+### adjust colorbar for logscale
+if(log_c==T){
+  nn <- seq(2,length(chl_breaks),2)
+  zp <- chl_breaks[nn]
+  zn <- round(10^chl_breaks)[nn]
+  axis.args <- list(at=zp,labels=zn)
+} else {
+  axis.args <- NULL
+}
 
 ### ----------------- Salinity krig -----------------
 my.krig <- spatialProcess(underway.loc, underway$sal)
 sal_kriged <- predictSurface(my.krig, loc.grid, extrap=TRUE)
-# sal_SE <- predictSurfaceSE(my.krig, loc.grid, extrap=TRUE)
+sal_SE <- predictSurfaceSE(my.krig, loc.grid, extrap=TRUE)
 
-if(max(sal_kriged$z,na.rm=T)>max(underway$sal,na.rm=T)){
-  sal_kriged$z[which(sal_kriged$z>max(underway$sal,na.rm=T))] <- max(underway$sal,na.rm=T)
+if(max(sal_kriged$z,na.rm=T)>=max(underway$sal,na.rm=T)){
+  sal_kriged$z[which(sal_kriged$z>=max(underway$sal,na.rm=T))] <- max(underway$sal,na.rm=T)
 }
-if(min(sal_kriged$z,na.rm=T)<min(underway$sal,na.rm=T)){
-  sal_kriged$z[which(sal_kriged$z<min(underway$sal,na.rm=T))] <- min(underway$sal,na.rm=T)
+if(min(sal_kriged$z,na.rm=T)<=min(underway$sal,na.rm=T)){
+  sal_kriged$z[which(sal_kriged$z<=min(underway$sal,na.rm=T))] <- min(underway$sal,na.rm=T)
 }
 
 sal_breaks <- pretty(underway$sal,n=20)
@@ -144,13 +167,13 @@ sal_cols <- sal_col(length(sal_breaks)-1)
 ### ----------------- Temperature krig -----------------
 my.krig <- spatialProcess(underway.loc, underway$temp)
 temp_kriged <- predictSurface(my.krig, loc.grid, extrap=TRUE)
-# temp_SE <- predictSurfaceSE(my.krig, loc.grid, extrap=TRUE)
+temp_SE <- predictSurfaceSE(my.krig, loc.grid, extrap=TRUE)
 
-if(max(temp_kriged$z,na.rm=T)>max(underway$temp,na.rm=T)){
-  temp_kriged$z[which(temp_kriged$z>max(underway$temp,na.rm=T))] <- max(underway$temp,na.rm=T)
+if(max(temp_kriged$z,na.rm=T)>=max(underway$temp,na.rm=T)){
+  temp_kriged$z[which(temp_kriged$z>=max(underway$temp,na.rm=T))] <- max(underway$temp,na.rm=T)
 }
-if(min(temp_kriged$z,na.rm=T)<min(underway$temp,na.rm=T)){
-  temp_kriged$z[which(temp_kriged$z<min(underway$temp,na.rm=T))] <- min(underway$temp,na.rm=T)
+if(min(temp_kriged$z,na.rm=T)<=min(underway$temp,na.rm=T)){
+  temp_kriged$z[which(temp_kriged$z<=min(underway$temp,na.rm=T))] <- min(underway$temp,na.rm=T)
 }
 
 temp_breaks <- pretty(underway$temp,n=20)
@@ -177,12 +200,12 @@ imagePlot(temp_kriged$x,
 #         temp_kriged$y,
 #         temp_kriged$z,
 #         levels=temp_breaks,add=T)
-# image(temp_SE,add=T,breaks=quantile(temp_SE$z,c(.6,1),na.rm=T),col='white')
-image(chl_SE,add=T,breaks=quantile(chl_SE$z,c(.3,1),na.rm=T),col='white') # chlorophyll standard error used to mask surface with SE greater than arbitrary threshold; can be adjusted for individual cruises
+# image(temp_SE,add=T,breaks=quantile(temp_SE$z,c(.4,1),na.rm=T),col='white')
+image(chl_SE,add=T,breaks=quantile(chl_SE$z,c(.4,1),na.rm=T),col='white') # chlorophyll standard error used to mask surface with SE greater than arbitrary threshold; can be adjusted for individual cruises
 image(topo_lon,topo_lat,topo,breaks=c(-1,100),col='white',add=T) # mask surface values that are in less than 1 meter depth
 plot(world,col='gray70',add=T)
 contour(topo_lon,topo_lat,topo,add=T,levels=c(-100,-50,-25,-10),col='gray40')
-lines(orig$lon,orig$lat,col='green',lwd=.5) ### plot track line
+# lines(orig$lon,orig$lat,col='gray70',lwd=.5) ### plot track line
 mtext(expression(paste('Longitude (',degree,'W)')),1,line=3,cex=.75)
 mtext(expression(paste('Latitude (',degree,'N)')),2,line=3,cex=.75)
 mtext(expression(paste('Surface Temperature (',degree,'F)')),adj=1,cex=.75)
@@ -200,15 +223,14 @@ imagePlot(sal_kriged$x,
 #         sal_kriged$z,
 #         levels=sal_breaks,add=T)
 # image(sal_SE,add=T,breaks=quantile(sal_SE$z,c(.4,1),na.rm=T),col='white')
-image(chl_SE,add=T,breaks=quantile(chl_SE$z,c(.3,1),na.rm=T),col='white')
+image(chl_SE,add=T,breaks=quantile(chl_SE$z,c(.4,1),na.rm=T),col='white')
 image(topo_lon,topo_lat,topo,breaks=c(-1,100),col='white',add=T)
 plot(world,col='gray70',add=T)
 contour(topo_lon,topo_lat,topo,add=T,levels=c(-100,-50,-25,-10),col='gray40')
-lines(orig$lon,orig$lat,col='magenta',lwd=.5)
+# lines(orig$lon,orig$lat,col='gray70',lwd=.5)
 mtext(expression(paste('Longitude (',degree,'W)')),1,line=3,cex=.75)
 mtext(expression(paste('Latitude (',degree,'N)')),2,line=3,cex=.75)
 mtext('Surface Salinity (PSU)',adj=1,cex=.75)
-
 
 imagePlot(chl_kriged$x,
           chl_kriged$y,
@@ -216,17 +238,18 @@ imagePlot(chl_kriged$x,
           col=chl_cols,breaks=chl_breaks,asp=1,
           xlab='',ylab='',las=1,
           xlim=xlims,ylim=ylims,
-          nlevel=length(cols),legend.width=.7,legend.mar=3)
+          nlevel=length(cols),legend.width=.7,legend.mar=3,
+          axis.args=axis.args) 
+          # lab.breaks = lab.breaks)
 # contour(chl_kriged$x,
 #         chl_kriged$y,
 #         chl_kriged$z,
 #         levels=chl_breaks,add=T)
-image(chl_SE,add=T,breaks=quantile(chl_SE$z,c(.3,1),na.rm=T),col='white')
+image(chl_SE,add=T,breaks=quantile(chl_SE$z,c(.4,1),na.rm=T),col='white')
 image(topo_lon,topo_lat,topo,breaks=c(-1,100),col='white',add=T)
-# plot(FL,col='gray70',add=T)
 plot(world,col='gray70',add=T)
 contour(topo_lon,topo_lat,topo,add=T,levels=c(-100,-50,-25,-10),col='gray40')
-lines(orig$lon,orig$lat,col='purple',lwd=.5)
+# lines(orig$lon,orig$lat,col='gray70',lwd=.5)
 mtext(expression(paste('Longitude (',degree,'W)')),1,line=3,cex=.75)
 mtext(expression(paste('Latitude (',degree,'N)')),2,line=3,cex=.75)
 mtext('Surface Chlorophyll Fluorescence (RFU)',adj=1,cex=.75)
@@ -245,6 +268,7 @@ mtext(paste('Note: Data are early release and subject to further QA/QC, \nplease
       outer=T,line=2,side=1,col='red',font=2,at=.01,adj=0,cex=.75)
 dev.off()
 
+file.copy(paste0(cruise,'_underway.png'),'latest_underway.png')
 
 ### Code written using:
 # sessionInfo()
