@@ -9,6 +9,7 @@ library(ncdf4)
 library(rgdal)
 
 
+### bathymetry
 setwd("~/Desktop/professional/biblioteca/data")
 bathy <- nc_open('etopo1.nc')
 topo <- ncvar_get(bathy, 'Band1')
