@@ -1,11 +1,14 @@
 # waltonsmith
 Processing R/V Walton Smith data
 
-The interpolation is done using the [fields](https://cran.r-project.org/web/packages/fields/index.html) R package which has come really nice kriging methods and handy visualization function. There is an excellent [vignette](https://github.com/NCAR/fields/blob/master/fieldsVignette.pdf) that explains the main functions and features.
+Update 2022-06-01: Bottom data interpolation now covaries with bathymetry
 
-Underdevelopment is interpolation that takes into consideration coastlines.
+The interpolation is done using the [fields](https://cran.r-project.org/web/packages/fields/index.html) R package which has nice kriging methods and handy visualization functions. There is an excellent [vignette](https://github.com/NCAR/fields/blob/master/fieldsVignette.pdf) that explains the main functions and features.
 
-Update: Bottom data interpolation now covaries with bathymetry
+Underdevelopment:
+- interpolation that takes into consideration coastlines
+- add city names to maps to make them recognizable
+- add polygons to blank out inland waters
 
 ---
 
