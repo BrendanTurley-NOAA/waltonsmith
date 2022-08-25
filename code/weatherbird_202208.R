@@ -68,9 +68,15 @@ lats_cal <- (data$Latitude.Deg+data$Latitude.Min/60)
 lons_cal==data$Longitude.Decimal
 lats_cal==data$Latitude.Decimal
 
-plot(data$Longitude.Decimal,data$Latitude.Decimal)
+setwd('~/Documents/R/Github/waltonsmith/figures')
+png(paste0(cruise,'_latlon_fix.png'), height = 5, width = 5, units = 'in', res=300)
+plot(data$Longitude.Decimal,data$Latitude.Decimal,asp=1)
 plot(world,add=T)
 points(lons_cal,lats_cal,col=2)
+legend('topright',c('orginial','recalculated'),col=c(1,2),pch=1)
+# arrows(data$Longitude.Decimal,data$Latitude.Decimal,
+       # lons_cal,lats_cal,length=.05,col=4)
+dev.off()
 
 data$Longitude.Decimal <- lons_cal
 data$Latitude.Decimal <- lats_cal
