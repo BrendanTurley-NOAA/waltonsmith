@@ -83,6 +83,7 @@ temp_ind <- grep('temperature',names(data4),ignore.case = T)
 data4$tempF <- NISTdegCtOdegF(data4[,temp_ind])
 
 temp_str <- data4$tempF - data3$tempF
+sal_str <- data4$Salinity.CTD.data - data3$Salinity.CTD.data
 
 bubblePlot(data3$Longitude.Decimal,data3$Latitude.Decimal,temp_str,asp=1)
 
@@ -117,6 +118,9 @@ xlims <- range(loc.grid$lon)
 ylims <- range(loc.grid$lat)
 
 
+# my.krig2 <- spatialProcess(ctd.loc,temp_str)
+# temp_kriged2 <- predictSurface(my.krig2, loc.grid, extrap=T)
+# temp_se2 <- predictSurfaceSE(my.krig2, loc.grid, extrap=T)
 my.krig2 <- spatialProcess(ctd.loc,temp_str,Z=-data3$Depth)
 temp_kriged2 <- predictSurface(my.krig2, loc.grid, ZGrid=Z,extrap=T)
 temp_se2 <- predictSurfaceSE(my.krig2, loc.grid, ZGrid=Z,extrap=T)
@@ -124,6 +128,9 @@ temp_se2 <- predictSurfaceSE(my.krig2, loc.grid, ZGrid=Z,extrap=T)
 imagePlot(temp_kriged2,asp=1)
 imagePlot(temp_se2,asp=1)
 
+# my.krig2 <- spatialProcess(ctd.loc,sal_str)
+# sal_kriged2 <- predictSurface(my.krig2, loc.grid, extrap=T)
+# sal_se2 <- predictSurfaceSE(my.krig2, loc.grid,extrap=T)
 my.krig2 <- spatialProcess(ctd.loc,sal_str,Z=-data3$Depth)
 sal_kriged2 <- predictSurface(my.krig2, loc.grid, ZGrid=Z,extrap=T)
 sal_se2 <- predictSurfaceSE(my.krig2, loc.grid, ZGrid=Z,extrap=T)
