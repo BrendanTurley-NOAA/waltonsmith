@@ -55,9 +55,22 @@ ex_col <- colorRampPalette(c('gray20','dodgerblue4','indianred3','gold1'))
 
 
 setwd('~/Desktop/professional/projects/Postdoc_FL/data/walton_smith/')
-data <- read.csv('WS22141_SampleLog_Initial.csv')
+list.files()
+data <- read.csv('WB22215_SampleLog_Working.csv')
 ### cruise name for file naming
-cruise <- 'WS22141'
+cruise <- 'WB22215'
+### check lat/lons
+lons_cal <- -(data$Longitude.Deg+data$Longitude.Min/60)
+lats_cal <- (data$Latitude.Deg+data$Latitude.Min/60)
+lons_cal==data$Longitude.Decimal
+lats_cal==data$Latitude.Decimal
+
+plot(data$Longitude.Decimal,data$Latitude.Decimal)
+plot(world,add=T)
+points(lons_cal,lats_cal,col=2)
+
+data$Longitude.Decimal <- lons_cal
+data$Latitude.Decimal <- lats_cal
 ### only stations at depth
 ind <- which(data$Depth!=0)
 data2 <- data[ind,]
@@ -65,6 +78,16 @@ st_rm <- c('2','3','6.5','MR','9','9.5','10','12','16','18','21/LK','EK MID','EK
 data3 <- data2[!is.element(data2$Station,st_rm),]
 data3$Date.GMT <- mdy(data3$Date.GMT)
 
+### check for repeated stations
+ind1 <- which(duplicated(data3$Station))
+for(i in data3$Station[ind1]){
+  tmp <- data3[which(data3$Station==i),]
+  print(paste('Station',i))
+  print(which(data3$Station==i))
+  print(tmp$Depth)
+}
+### remove shallower samples
+data3 <- data3[-c(25,39),]
 
 ### subset bathymetry
 adj1 <- mean(diff(topo_lon))*5
