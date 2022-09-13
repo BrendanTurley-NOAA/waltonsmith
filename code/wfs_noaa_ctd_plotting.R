@@ -3,6 +3,7 @@ library(akima)
 library(fields)
 library(lubridate)
 library(ncdf4)
+library(NISTunits)
 library(oce)
 library(raster)
 library(rgdal)
@@ -146,14 +147,15 @@ plot(bot_plot$lon,bot_plot$lat,asp=1,cex=bot_plot$r_depth/100)
 bot_plot$mld[which(is.na(bot_plot$mld))] <- bot_plot$m_depth[which(is.na(bot_plot$mld))]
 
 
-data_plot <- function(longitude, latitude, data, color_fxn, n_breaks=15, title='', cex=2){
+data_plot <- function(longitude, latitude, data, color_fxn, n_breaks=15, title='', cex=2, xlab='',ylab=''){
   breaks <- pretty(data,n=n_breaks)
   cols <- color_fxn(length(breaks)-1)
   
   plot(longitude,latitude,pch=21,asp=1,las=1,cex=cex,
        bg=cols[as.numeric(cut(data,breaks))],
-       col=cols[as.numeric(cut(data,breaks))])
-  imagePlot(zlim=range(breaks,na.rm=T),breaks=breaks,col=cols,legend.only=TRUE,legend.mar=0)
+       col=cols[as.numeric(cut(data,breaks))],
+       xlab=xlab,ylab=ylab)
+  imagePlot(zlim=range(breaks,na.rm=T),breaks=breaks,col=cols,legend.only=TRUE,legend.width = 1.5)
   plot(world,add=T,col='gray80')
   contour(topo_lon,
           topo_lat,
@@ -162,27 +164,57 @@ data_plot <- function(longitude, latitude, data, color_fxn, n_breaks=15, title='
   mtext(title)
 }
 
-par(mfrow=c(2,2),mar=c(5,4,3,5))
-data_plot(bot_plot$lon,bot_plot$lat,bot_plot$chl_max,c_col,title=expression(paste('Chlorophyll max (mg m'^-3,')')),cex=2)
+par(mfrow=c(2,2),mar=c(5,4,2,3.5))
+data_plot(bot_plot$lon,bot_plot$lat,bot_plot$chl_max,c_col,title=expression(paste('Chlorophyll max (mg m'^-3,')')))
 data_plot(bot_plot$lon,bot_plot$lat,bot_plot$chl_p50,c_col,title=expression(paste('Chlorophyll median (mg m'^-3,')')))
 data_plot(bot_plot$lon,bot_plot$lat,bot_plot$z_cmax,m_col,title='Chlorophyll max depth (m)')
 data_plot(bot_plot$lon,bot_plot$lat,bot_plot$z_cmax2,m_col,title='Scaled Chlorophyll max depth')
 
-par(mfrow=c(2,2),mar=c(5,4,3,5))
-data_plot(bot_plot$lon,bot_plot$lat,bot_plot$bot_t,t_col,title=expression(paste('Bottom temperature (',degree,'C)')))
+data_plot(bot_plot$lon,bot_plot$lat,bot_plot$bot_c,c_col,title=expression(paste('Bottom chlorophyll (mg m'^-3,')')))
+data_plot(bot_plot$lon,bot_plot$lat,bot_plot$surf_c,c_col,title=expression(paste('Surface chlorophyll (mg m'^-3,')')))
+
+bot_plot$bot_t_F <- NISTdegCtOdegF(bot_plot$bot_t)
+
+setwd("~/Desktop/professional/projects/Postdoc_FL/figures")
+png('new_plot.png',width=9,height=12,units='in',pointsize=12,res=300)
+par(mfrow=c(2,2),mar=c(4,4,3,4),oma=c(5,0,3,1))
+data_plot(bot_plot$lon,bot_plot$lat,bot_plot$bot_t_F,t_col,title=expression(paste('Bottom temperature (',degree,'F)')))
 data_plot(bot_plot$lon,bot_plot$lat,bot_plot$bot_s,s_col,title='Bottom salinity (psu)')
 data_plot(bot_plot$lon,bot_plot$lat,bot_plot$bot_c,c_col,title=expression(paste('Bottom chlorophyll (mg m'^-3,')')))
-plot(bot_plot$lon,bot_plot$lat,pch=21,asp=1,
+
+plot(bot_plot$lon,bot_plot$lat,pch=21,asp=1,cex=2,las=1,
      bg=o_cols[as.numeric(cut(bot_plot$bot_do,o_breaks))],
      col=o_cols[as.numeric(cut(bot_plot$bot_do,o_breaks))],
-     xlab='longitude',ylab='latitude')
-imagePlot(zlim=range(o_breaks,na.rm=T),breaks=o_breaks,col=o_cols,legend.only=TRUE,legend.mar=0)
+     xlab='',ylab='')
+imagePlot(zlim=range(o_breaks,na.rm=T),breaks=o_breaks,col=o_cols,legend.only=TRUE,legend.width = 1.5)
 mtext(expression(paste('Bottom dissolved oxygen (mg l'^-1,')')))
 plot(world,add=T,col='gray80')
 contour(topo_lon,
         topo_lat,
         topo,
         add=T,levels=c(-200,-100,-50,-25,-10),col='gray70')
+
+mtext('NMFS Bottom Longline Survey Bulletin',
+      outer=T,line=1,side=3,font=2,at=.05,adj=0,cex=1.25)
+mtext(paste('Collected: R/V Oregon II,',
+            paste(
+              paste(month.abb[month(bot_plot$date_utc[1])],
+                    day(bot_plot$date_utc[1])),
+              paste(month.abb[month(bot_plot$date_utc[nrow(bot_plot)])],
+                    day(bot_plot$date_utc[nrow(bot_plot)])),
+              sep='-')),
+      outer=T,line=-.1,side=3,at=.05,adj=0)
+mtext('Bottom contours: 10, 25, 50, 100, 200 meters',
+      outer=T,line=0,side=1,at=.05,adj=0)
+# mtext(paste('Note: Data are early release and subject to further QA/QC, \nplease contact brendan.turley@noaa.gov for comments / concerns \nUpdated: ',as.Date(Sys.time())),
+      # outer=T,line=4,side=1,col='red',font=2,at=.05,adj=0)
+mtext(paste('Note: Data are early release and subject to further QA/QC'),
+      outer=T,line=1,side=1,col='red',font=2,at=.05,adj=0)
+mtext(paste('please contact brendan.turley@noaa.gov for comments / concerns'),
+      outer=T,line=2,side=1,col='red',font=2,at=.05,adj=0)
+mtext(paste('Updated: ',as.Date(Sys.time())),
+      outer=T,line=3,side=1,col='red',font=2,at=.05,adj=0)
+dev.off()
 
 par(mfrow=c(2,2),mar=c(5,4,3,5))
 data_plot(bot_plot$lon,bot_plot$lat,bot_plot$pycno,m_col,title='Pycnocline depth (m)')
@@ -381,6 +413,17 @@ points(bot_plot$lon,bot_plot$lat,pch=20,col='gray70')
 mtext('Scaled MLD',adj=1)
 mtext(expression(paste('Longitude (',degree,'W)')),1,2.5)
 # mtext(expression(paste('Latitude (',degree,'N)')),2,2)
+
+mtext('R/V Oregon II Bulletin',
+      outer=T,line=1,side=3,font=2,at=.05,adj=0,cex=1.25)
+mtext(paste('Collected:',
+            paste(
+              paste(month.abb[month(bot_plot$date_utc[1])],
+                    day(bot_plot$date_utc[1])),
+              paste(month.abb[month(bot_plot$date_utc[nrow(bot_plot)])],
+                    day(bot_plot$date_utc[nrow(bot_plot)])),
+              sep='-')),
+      outer=T,line=-.1,side=3,at=.05,adj=0)
 mtext(paste('Note: Data are early release and subject to further QA/QC, \nplease contact brendan.turley@noaa.gov for comments/concerns \nUpdated: ',as.Date(Sys.time())),
       outer=T,line=3,side=1,col='red',font=2,at=.05,adj=0)
 dev.off()
