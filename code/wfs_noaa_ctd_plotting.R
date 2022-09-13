@@ -3,6 +3,7 @@ library(fields)
 library(lubridate)
 library(ncdf4)
 library(oce)
+library(raster)
 library(rgdal)
 library(scales)
 
@@ -17,6 +18,7 @@ nc_close(bathy)
 
 setwd("~/Desktop/professional/biblioteca/data/shapefiles/ne_10m_admin_0_countries")
 world <- readOGR('ne_10m_admin_0_countries.shp')
+world <- crop(world, extent(-86, -79, 24.5, 30))
 
 
 ### colors
@@ -24,7 +26,7 @@ d_col <- colorRampPalette(rev(c('purple4','purple2','orchid1','gray90')))
 m_col <- colorRampPalette(rev(c('blue4','dodgerblue2','deepskyblue1','gray90')))
 t_col <- colorRampPalette(c(1,'purple','darkorange','gold'))
 s_col <- colorRampPalette(c('purple4','dodgerblue4','seagreen3','khaki1'))
-c_col <- colorRampPalette(c('honeydew2','darkseagreen3','forestgreen','darkslategrey'))
+c_col <- colorRampPalette(c('honeydew2','darkseagreen3','darkgreen'))
 ox.col1 <- colorRampPalette(c(1,'firebrick4','red'))
 ox.col2 <- colorRampPalette(c('darkgoldenrod4','goldenrod2','gold'))
 ox.col3 <- colorRampPalette(c('dodgerblue4','deepskyblue2','cadetblue1'))
@@ -61,7 +63,11 @@ bottom_dat <- data.frame(filename=rep(NA,length(files)),
                          dd_dz2=rep(NA,length(files)),
                          mld=rep(NA,length(files)),
                          surf_s=rep(NA,length(files)),
-                         surf_c=rep(NA,length(files))
+                         surf_c=rep(NA,length(files)),
+                         pycno=rep(NA,length(files)),
+                         z_cmax=rep(NA,length(files)),
+                         chl_max=rep(NA,length(files)),
+                         chl_p50=rep(NA,length(files))
 )
 for(i in 1:length(files)){
   data <- read.ctd(files[i])
@@ -91,22 +97,35 @@ for(i in 1:length(files)){
     bottom_dat$surf_s[i] <- data@data$salinity[1]
     bottom_dat$surf_c[i] <- data@data$fluorescence[1]
     
-    ### stratification
-    y <- smooth.spline(data@data$depth,data@data$density,df=length(data@data$density)/3)
-    dd_dz <-  diff(y$y)/diff(data@data$depth)
-    bottom_dat$dd_dz1[i] <- max(dd_dz,na.rm=T)
-    bottom_dat$dd_dz2[i] <- mean(dd_dz[which(data@data$depth<=50)],na.rm=T)
+    if(length(data@data$depth)>=4){
+      ### stratification
+      y <- smooth.spline(data@data$depth,data@data$density,df=length(data@data$density)/3)
+      dd_dz <-  diff(y$y)/diff(data@data$depth)
+      bottom_dat$dd_dz1[i] <- max(dd_dz,na.rm=T)
+      bottom_dat$dd_dz2[i] <- mean(dd_dz[which(data@data$depth<=50)],na.rm=T)
+      bottom_dat$pycno[i] <- data@data$depth[which.max(dd_dz)]
+    }
     
     ### mld
     mld_ind <- which(data@data$density>mean(data@data$density[1:3],na.rm=T)+.125)[1]
     # mld_ind <- which(data@data$density>data@data$density[1]+.125)[1]
     bottom_dat$mld[i] <- data@data$depth[mld_ind]
+    
+    ### chl max
+    chl_max <- which.max(data@data$fluorescence)
+    bottom_dat$z_cmax[i] <- data@data$depth[chl_max]
+    bottom_dat$chl_max[i] <- data@data$fluorescence[chl_max]
+    bottom_dat$chl_p50[i] <- median(data@data$fluorescence,na.rm=T)
+    
   # }
 }
 bottom_dat <- bottom_dat[!is.na(bottom_dat$date_utc),]
 bottom_dat$date_utc <- ymd_hms(bottom_dat$date_utc)
 bottom_dat$mld2 <- bottom_dat$mld/bottom_dat$r_depth
 bottom_dat$mld2[which(is.na(bottom_dat$mld2))] <- 1
+bottom_dat$z_cmax2 <- bottom_dat$z_cmax/bottom_dat$r_depth
+bottom_dat$z_cmax2[which(is.na(bottom_dat$z_cmax2))] <- 1
+
 write.csv(bottom_dat,'NOAA_NMFS_bot_dat.csv',row.names = F)
 
 plot(bottom_dat$lon,bottom_dat$lat,asp=1,cex=bottom_dat$r_depth/100)
@@ -115,18 +134,77 @@ plot(world,add=T)
 hist(bottom_dat$r_depth-bottom_dat$m_depth)
 
 ### pick cruise
-table(bottom_dat$cruise,month(bottom_dat$date_utc))
+table(bottom_dat$cruise,month(bottom_dat$date_utc),year(bottom_dat$date_utc))
 cruise <- sort(unique(bottom_dat$cruise))[2]
-ind <- which(bottom_dat$cruise==cruise)
+ind <- which(bottom_dat$cruise==cruise & 
+               bottom_dat$lat<latbox_n & bottom_dat$lat>latbox_s &
+               bottom_dat$lon<lonbox_e & bottom_dat$lon>lonbox_w)
 bot_plot <- bottom_dat[ind,]
+plot(bot_plot$lon,bot_plot$lat,asp=1,cex=bot_plot$r_depth/100)
 ### fix NA mlds to bottom
 bot_plot$mld[which(is.na(bot_plot$mld))] <- bot_plot$m_depth[which(is.na(bot_plot$mld))]
+
+
+data_plot <- function(longitude, latitude, data, color_fxn, n_breaks=15, title='', cex=2){
+  breaks <- pretty(data,n=n_breaks)
+  cols <- color_fxn(length(breaks)-1)
+  
+  plot(longitude,latitude,pch=21,asp=1,las=1,cex=cex,
+       bg=cols[as.numeric(cut(data,breaks))],
+       col=cols[as.numeric(cut(data,breaks))])
+  imagePlot(zlim=range(breaks,na.rm=T),breaks=breaks,col=cols,legend.only=TRUE,legend.mar=0)
+  plot(world,add=T,col='gray80')
+  contour(topo_lon,
+          topo_lat,
+          topo,
+          add=T,levels=c(-200,-100,-50,-25,-10),col='gray70')
+  mtext(title)
+}
+
+par(mfrow=c(2,2),mar=c(5,4,3,5))
+data_plot(bot_plot$lon,bot_plot$lat,bot_plot$chl_max,c_col,title=expression(paste('Chlorophyll max (mg m'^-3,')')),cex=2)
+data_plot(bot_plot$lon,bot_plot$lat,bot_plot$chl_p50,c_col,title=expression(paste('Chlorophyll median (mg m'^-3,')')))
+data_plot(bot_plot$lon,bot_plot$lat,bot_plot$z_cmax,m_col,title='Chlorophyll max depth (m)')
+data_plot(bot_plot$lon,bot_plot$lat,bot_plot$z_cmax2,m_col,title='Scaled Chlorophyll max depth')
+
+par(mfrow=c(2,2),mar=c(5,4,3,5))
+data_plot(bot_plot$lon,bot_plot$lat,bot_plot$bot_t,t_col,title=expression(paste('Bottom temperature (',degree,'C)')))
+data_plot(bot_plot$lon,bot_plot$lat,bot_plot$bot_s,s_col,title='Bottom salinity (psu)')
+data_plot(bot_plot$lon,bot_plot$lat,bot_plot$bot_c,c_col,title=expression(paste('Bottom chlorophyll (mg m'^-3,')')))
+plot(bot_plot$lon,bot_plot$lat,pch=21,asp=1,
+     bg=o_cols[as.numeric(cut(bot_plot$bot_do,o_breaks))],
+     col=o_cols[as.numeric(cut(bot_plot$bot_do,o_breaks))],
+     xlab='longitude',ylab='latitude')
+imagePlot(zlim=range(o_breaks,na.rm=T),breaks=o_breaks,col=o_cols,legend.only=TRUE,legend.mar=0)
+mtext(expression(paste('Bottom dissolved oxygen (mg l'^-1,')')))
+plot(world,add=T,col='gray80')
+contour(topo_lon,
+        topo_lat,
+        topo,
+        add=T,levels=c(-200,-100,-50,-25,-10),col='gray70')
+
+par(mfrow=c(2,2),mar=c(5,4,3,5))
+data_plot(bot_plot$lon,bot_plot$lat,bot_plot$pycno,m_col,title='Pycnocline depth (m)')
+data_plot(bot_plot$lon,bot_plot$lat,bot_plot$mld,m_col,title='Mixed-layer depth (m)')
+data_plot(bot_plot$lon,bot_plot$lat,bot_plot$z_cmax,m_col,title='Chlorophyll max depth (m)')
+
+par(mfrow=c(2,2),mar=c(5,4,3,5))
+data_plot(bot_plot$lon,bot_plot$lat,bot_plot$dd_dz1,d_col,title='Density stratification')
+data_plot(bot_plot$lon,bot_plot$lat,bot_plot$dd_dz2,d_col,title='Density stratification')
+data_plot(bot_plot$lon,bot_plot$lat,bot_plot$mld,m_col,title='Mixed-layer depth (m)')
+data_plot(bot_plot$lon,bot_plot$lat,bot_plot$mld2,m_col,title='Scaled MLD')
+
+
+
 ### Kriging locations
 locs <- cbind(bot_plot$lon,bot_plot$lat)
 ### Kriging
+parms <- c(8:11,14:19)
+names(bot_plot)[parms]
 system.time(
-  for(i in c(7:10,13:18)){
+  for(i in parms){
     parm <- bot_plot[,i]
+    print(names(bot_plot)[i])
     test <- tryCatch(spatialProcess(locs,parm,
                                     Distance = "rdist.earth"),
                      error=function (x) x,
@@ -139,12 +217,14 @@ system.time(
     if(any(class(test)=='warning')){
       test <- Krig(locs,parm,
                    cov.function = "stationary.cov",
-                   Covariance="Matern")
+                   Covariance="Matern",
+                   GCV=F)
     }
     
     kriged <- predictSurface(test,
                              list(lon=seq(min(bot_plot$lon,na.rm=T), max(bot_plot$lon,na.rm=T),.01),
                                   lat=seq(min(bot_plot$lat,na.rm=T), max(bot_plot$lat,na.rm=T),.01)))
+    imagePlot(kriged)
     surf_se <- predictSurfaceSE(test,
                                 grid.list = list(lon=seq(min(bot_plot$lon,na.rm=T), max(bot_plot$lon,na.rm=T),.01),
                                                  lat=seq(min(bot_plot$lat,na.rm=T), max(bot_plot$lat,na.rm=T),.01)))
@@ -175,9 +255,13 @@ imagePlot(bot_s_kriged,asp=1)
 points(bot_plot$lon,bot_plot$lat,pch=20,col='green')
 
 par(mfrow=c(1,2))
-imagePlot(surf_c_kriged$z-bot_c_kriged$z,asp=1)
+imagePlot(surf_c_kriged$x,
+          surf_c_kriged$y,
+  surf_c_kriged$z-bot_c_kriged$z,asp=1)
 points(bot_plot$lon,bot_plot$lat,pch=20,col='green')
-imagePlot(surf_s_kriged$z-bot_s_kriged$z,asp=1)
+imagePlot(surf_s_kriged$x,
+          surf_s_kriged$y,
+          surf_s_kriged$z-bot_s_kriged$z,asp=1)
 points(bot_plot$lon,bot_plot$lat,pch=20,col='green')
 
 par(mfrow=c(1,2))
@@ -556,7 +640,7 @@ mtext(paste('Note: Data are early release and subject to further QA/QC, \nplease
 dev.off()
 
 
-
+quilt.plot(bot_plot$lon,bot_plot$lat,bot_plot$surf_c,asp=1,breaks=c_breaks,col=c_cols)
 quilt.plot(bot_plot$lon,bot_plot$lat,bot_plot$bot_t,asp=1,breaks=t_breaks,col=t_cols)
 quilt.plot(bot_plot$lon,bot_plot$lat,bot_plot$bot_s,asp=1,breaks=s_breaks,col=s_cols)
 quilt.plot(bot_plot$lon,bot_plot$lat,bot_plot$bot_c,asp=1,breaks=c_breaks,col=c_cols)
