@@ -31,7 +31,7 @@ s_col <- colorRampPalette(c('purple4','dodgerblue4','seagreen3','khaki1'))
 c_col <- colorRampPalette(c('honeydew2','darkseagreen3','darkgreen'))
 ox.col1 <- colorRampPalette(c(1,'firebrick4','red'))
 ox.col2 <- colorRampPalette(c('darkgoldenrod4','goldenrod2','gold'))
-ox.col3 <- colorRampPalette(c('dodgerblue4','deepskyblue2','cadetblue1'))
+ox.col3 <- colorRampPalette(c(1,'dodgerblue4','deepskyblue2','cadetblue1','azure'))
 o_breaks <- seq(0,10,by=.25)
 o_cols <- c(ox.col1(length(o_breaks[o_breaks<2])),
           ox.col2(length(o_breaks[o_breaks>=2 & o_breaks<3.5])),
