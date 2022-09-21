@@ -52,7 +52,7 @@ ex_col <- colorRampPalette(c('gray20','dodgerblue4','indianred3','gold1'))
 
 
 
-setwd('~/Downloads')
+setwd('~/Desktop/professional/projects/Postdoc_FL/data/walton_smith')
 data <- read.csv('20220426_WS_samplelog_master2.csv')
 data$Longitude.Decimal <- -abs(data$Longitude.Decimal)
 data$Date..GMT. <- mdy(data$Date..GMT.)
