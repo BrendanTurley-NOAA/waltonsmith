@@ -11,6 +11,23 @@ library(scales)
 
 source('~/Desktop/professional/biblioteca/scripts/color_breaks.R')
 
+data_plot <- function(longitude, latitude, data, color_fxn, n_breaks=15, title='', cex=2, xlab='',ylab=''){
+  breaks <- pretty(data,n=n_breaks)
+  cols <- color_fxn(length(breaks)-1)
+  
+  plot(longitude,latitude,pch=21,asp=1,las=1,cex=cex,
+       bg=cols[as.numeric(cut(data,breaks))],
+       col=cols[as.numeric(cut(data,breaks))],
+       xlab=xlab,ylab=ylab)
+  imagePlot(zlim=range(breaks,na.rm=T),breaks=breaks,col=cols,legend.only=TRUE,legend.width = 1.5)
+  plot(world,add=T,col='gray80')
+  contour(topo_lon,
+          topo_lat,
+          topo,
+          add=T,levels=c(-200,-100,-50,-25,-10),col='gray70')
+  mtext(title)
+}
+
 setwd("~/Desktop/professional/biblioteca/data")
 bathy <- nc_open('etopo1.nc')
 topo <- ncvar_get(bathy, 'Band1')
@@ -29,6 +46,9 @@ m_col <- colorRampPalette(rev(c('blue4','dodgerblue2','deepskyblue1','gray90')))
 t_col <- colorRampPalette(c(1,'purple','darkorange','gold'))
 s_col <- colorRampPalette(c('purple4','dodgerblue4','seagreen3','khaki1'))
 c_col <- colorRampPalette(c('honeydew2','darkseagreen3','darkgreen'))
+strat_n_col <- colorRampPalette(c('purple4','purple2','orchid1','gray90'))
+strat_p_col <- colorRampPalette(rev(c('darkgreen','green3','palegreen2','gray90')))
+
 ox.col1 <- colorRampPalette(c(1,'firebrick4','red'))
 ox.col2 <- colorRampPalette(c('darkgoldenrod4','goldenrod2','gold'))
 ox.col3 <- colorRampPalette(c('midnightblue','dodgerblue4','deepskyblue2','cadetblue1','azure'))
@@ -66,6 +86,7 @@ bottom_dat <- data.frame(filename=rep(NA,length(files)),
                          mld=rep(NA,length(files)),
                          surf_s=rep(NA,length(files)),
                          surf_c=rep(NA,length(files)),
+                         surf_t=rep(NA,length(files)),
                          pycno=rep(NA,length(files)),
                          z_cmax=rep(NA,length(files)),
                          chl_max=rep(NA,length(files)),
@@ -98,6 +119,7 @@ for(i in 1:length(files)){
     bottom_dat$r_depth[i] <- data@metadata$waterDepth
     bottom_dat$surf_s[i] <- data@data$salinity[1]
     bottom_dat$surf_c[i] <- data@data$fluorescence[1]
+    bottom_dat$surf_t[i] <- data@data$temperature[1]
     
     if(length(data@data$depth)>=4){
       ### stratification
@@ -130,6 +152,9 @@ bottom_dat$z_cmax2[which(is.na(bottom_dat$z_cmax2))] <- 1
 
 write.csv(bottom_dat,'NOAA_NMFS_bot_dat.csv',row.names = F)
 
+# setwd('~/Desktop/noaa_ctd')
+bottom_dat <- read.csv('NOAA_NMFS_bot_dat.csv')
+
 plot(bottom_dat$lon,bottom_dat$lat,asp=1,cex=bottom_dat$r_depth/100)
 plot(bottom_dat$lon,bottom_dat$lat,asp=1,cex=bottom_dat$m_depth/100)
 plot(world,add=T)
@@ -138,7 +163,7 @@ hist(bottom_dat$r_depth-bottom_dat$m_depth)
 ### pick cruise
 table(bottom_dat$cruise,month(bottom_dat$date_utc),year(bottom_dat$date_utc))
 sort(unique(bottom_dat$cruise))
-cruise <- sort(unique(bottom_dat$cruise))[4]
+cruise <- '2203'
 ind <- which(bottom_dat$cruise==cruise & 
                bottom_dat$lat<latbox_n & bottom_dat$lat>latbox_s &
                bottom_dat$lon<lonbox_e & bottom_dat$lon>lonbox_w)
@@ -148,32 +173,17 @@ plot(bot_plot$lon,bot_plot$lat,asp=1,cex=bot_plot$r_depth/100)
 bot_plot$mld[which(is.na(bot_plot$mld))] <- bot_plot$m_depth[which(is.na(bot_plot$mld))]
 
 
-data_plot <- function(longitude, latitude, data, color_fxn, n_breaks=15, title='', cex=2, xlab='',ylab=''){
-  breaks <- pretty(data,n=n_breaks)
-  cols <- color_fxn(length(breaks)-1)
-  
-  plot(longitude,latitude,pch=21,asp=1,las=1,cex=cex,
-       bg=cols[as.numeric(cut(data,breaks))],
-       col=cols[as.numeric(cut(data,breaks))],
-       xlab=xlab,ylab=ylab)
-  imagePlot(zlim=range(breaks,na.rm=T),breaks=breaks,col=cols,legend.only=TRUE,legend.width = 1.5)
-  plot(world,add=T,col='gray80')
-  contour(topo_lon,
-          topo_lat,
-          topo,
-          add=T,levels=c(-200,-100,-50,-25,-10),col='gray70')
-  mtext(title)
-}
-
 par(mfrow=c(2,2),mar=c(5,4,2,3.5))
 data_plot(bot_plot$lon,bot_plot$lat,bot_plot$chl_max,c_col,title=expression(paste('Chlorophyll max (mg m'^-3,')')))
 data_plot(bot_plot$lon,bot_plot$lat,bot_plot$chl_p50,c_col,title=expression(paste('Chlorophyll median (mg m'^-3,')')))
 data_plot(bot_plot$lon,bot_plot$lat,bot_plot$z_cmax,m_col,title='Chlorophyll max depth (m)')
 data_plot(bot_plot$lon,bot_plot$lat,bot_plot$z_cmax2,m_col,title='Scaled Chlorophyll max depth')
 
+par(mfrow=c(2,2),mar=c(5,4,2,3.5))
 data_plot(bot_plot$lon,bot_plot$lat,bot_plot$bot_c,c_col,title=expression(paste('Bottom chlorophyll (mg m'^-3,')')))
 data_plot(bot_plot$lon,bot_plot$lat,bot_plot$surf_c,c_col,title=expression(paste('Surface chlorophyll (mg m'^-3,')')))
 
+### convert temps
 bot_plot$bot_t_F <- NISTdegCtOdegF(bot_plot$bot_t)
 
 setwd("~/Desktop/professional/projects/Postdoc_FL/figures")
@@ -221,6 +231,11 @@ mtext(paste('Updated: ',as.Date(Sys.time())),
 dev.off()
 
 par(mfrow=c(2,2),mar=c(5,4,3,5))
+data_plot(bot_plot$lon,bot_plot$lat,bot_plot$surf_t-bot_plot$bot_t,t_col,title=expression(paste('Surface temperature (',degree,'F)')))
+data_plot(bot_plot$lon,bot_plot$lat,bot_plot$surf_s-bot_plot$bot_s,s_col,title='Surface salinity (psu)')
+
+
+par(mfrow=c(2,2),mar=c(5,4,3,5))
 data_plot(bot_plot$lon,bot_plot$lat,bot_plot$pycno,m_col,title='Pycnocline depth (m)')
 data_plot(bot_plot$lon,bot_plot$lat,bot_plot$mld,m_col,title='Mixed-layer depth (m)')
 data_plot(bot_plot$lon,bot_plot$lat,bot_plot$z_cmax,m_col,title='Chlorophyll max depth (m)')
@@ -233,6 +248,7 @@ data_plot(bot_plot$lon,bot_plot$lat,bot_plot$mld2,m_col,title='Scaled MLD')
 
 
 
+###----------- Kriging -----------
 ### Kriging locations
 locs <- cbind(bot_plot$lon,bot_plot$lat)
 ### Kriging
