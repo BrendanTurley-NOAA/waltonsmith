@@ -20,7 +20,7 @@ nc_close(bathy)
 
 setwd("~/Desktop/professional/biblioteca/data/shapefiles/ne_10m_admin_0_countries")
 world <- readOGR('ne_10m_admin_0_countries.shp')
-world <- crop(world, extent(-86, -79, 24.5, 30))
+world <- crop(world, extent(-100, -74, 24.5, 40))
 
 
 ### colors
@@ -31,7 +31,7 @@ s_col <- colorRampPalette(c('purple4','dodgerblue4','seagreen3','khaki1'))
 c_col <- colorRampPalette(c('honeydew2','darkseagreen3','darkgreen'))
 ox.col1 <- colorRampPalette(c(1,'firebrick4','red'))
 ox.col2 <- colorRampPalette(c('darkgoldenrod4','goldenrod2','gold'))
-ox.col3 <- colorRampPalette(c(1,'dodgerblue4','deepskyblue2','cadetblue1','azure'))
+ox.col3 <- colorRampPalette(c('midnightblue','dodgerblue4','deepskyblue2','cadetblue1','azure'))
 o_breaks <- seq(0,10,by=.25)
 o_cols <- c(ox.col1(length(o_breaks[o_breaks<2])),
           ox.col2(length(o_breaks[o_breaks>=2 & o_breaks<3.5])),
@@ -137,7 +137,8 @@ hist(bottom_dat$r_depth-bottom_dat$m_depth)
 
 ### pick cruise
 table(bottom_dat$cruise,month(bottom_dat$date_utc),year(bottom_dat$date_utc))
-cruise <- sort(unique(bottom_dat$cruise))[2]
+sort(unique(bottom_dat$cruise))
+cruise <- sort(unique(bottom_dat$cruise))[4]
 ind <- which(bottom_dat$cruise==cruise & 
                bottom_dat$lat<latbox_n & bottom_dat$lat>latbox_s &
                bottom_dat$lon<lonbox_e & bottom_dat$lon>lonbox_w)
@@ -194,15 +195,18 @@ contour(topo_lon,
         topo,
         add=T,levels=c(-200,-100,-50,-25,-10),col='gray70')
 
-mtext('NMFS Bottom Longline Survey Bulletin',
+mtext('NMFS-SEAMAP Fall Plankton Cruise',
+# mtext('NMFS Bottom Longline Survey',
       outer=T,line=1,side=3,font=2,at=.05,adj=0,cex=1.25)
-mtext(paste('Collected: R/V Oregon II,',
+mtext(paste(paste('Collected: R/V',
+            bot_plot$ship[1], sep=' '),
             paste(
               paste(month.abb[month(bot_plot$date_utc[1])],
                     day(bot_plot$date_utc[1])),
               paste(month.abb[month(bot_plot$date_utc[nrow(bot_plot)])],
                     day(bot_plot$date_utc[nrow(bot_plot)])),
-              sep='-')),
+              sep=' - '),
+            year(bot_plot$date_utc[1]),sep=', '),
       outer=T,line=-.1,side=3,at=.05,adj=0)
 mtext('Bottom contours: 10, 25, 50, 100, 200 meters',
       outer=T,line=0,side=1,at=.05,adj=0)
