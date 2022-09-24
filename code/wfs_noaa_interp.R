@@ -80,19 +80,19 @@ resolution <- 100
 temp_in <- interp(data_d$lon,data_d$depth,data_d$temp,
                   yo=seq(min(data_d$depth,na.rm=T), max(data_d$depth,na.rm=T), length = resolution),
                   xo=seq(min(data_d$lon,na.rm=T), max(data_d$lon,na.rm=T), length = resolution*3),
-                  duplicate='mean')
+                  duplicate='mean',linear=T)
 sal_in <- interp(data_d$lon,data_d$depth,data_d$sal,
                  yo=seq(min(data_d$depth,na.rm=T), max(data_d$depth,na.rm=T), length = resolution),
                  xo=seq(min(data_d$lon,na.rm=T), max(data_d$lon,na.rm=T), length = resolution*3),
-                 duplicate='mean')
+                 duplicate='mean',linear=T)
 chl_in <- interp(data_d$lon,data_d$depth,log(data_d$chl+1,base=10),
                  yo=seq(min(data_d$depth,na.rm=T), max(data_d$depth,na.rm=T), length = resolution),
                  xo=seq(min(data_d$lon,na.rm=T), max(data_d$lon,na.rm=T), length = resolution*3),
-                 duplicate='mean')
+                 duplicate='mean',linear=T)
 do_in <- interp(data_d$lon,data_d$depth,data_d$do,
                 yo=seq(min(data_d$depth,na.rm=T), max(data_d$depth,na.rm=T), length = resolution),
                 xo=seq(min(data_d$lon,na.rm=T), max(data_d$lon,na.rm=T), length = resolution*3),
-                duplicate='mean')
+                duplicate='mean',linear=T)
 
 t_breaks <- pretty(temp_in$z,n=20)
 t_cols <- t_col(length(t_breaks)-1)
@@ -113,3 +113,9 @@ points(data_d$lon,data_d$depth,pch=20,cex=.1,col='gray50')
 imagePlot(do_in,breaks=o_breaks,col=o_cols)
 polygon(c(bottoms[,2]-5,bottoms[,2],bottoms[,2]+5),c(bottoms[,1]-100,bottoms[,1],bottoms[,1]-100),col='wheat4')
 points(data_d$lon,data_d$depth,pch=20,cex=.1,col='gray50')
+
+o_inter <- interpBarnes(data_d$lon,data_d$depth,data_d$do,pregrid=F,
+             yg=seq(min(data_d$depth,na.rm=T), max(data_d$depth,na.rm=T), length = resolution),
+             xg=seq(min(data_d$lon,na.rm=T), max(data_d$lon,na.rm=T), length = resolution*3))
+imagePlot(o_inter$xg,o_inter$yg,o_inter$zg,breaks=o_breaks,col=o_cols)
+polygon(c(bottoms[,2]-5,bottoms[,2],bottoms[,2]+5),c(bottoms[,1]-100,bottoms[,1],bottoms[,1]-100),col='wheat4')
