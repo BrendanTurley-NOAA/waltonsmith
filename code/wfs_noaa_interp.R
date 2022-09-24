@@ -119,3 +119,5 @@ o_inter <- interpBarnes(data_d$lon,data_d$depth,data_d$do,pregrid=F,
              xg=seq(min(data_d$lon,na.rm=T), max(data_d$lon,na.rm=T), length = resolution*3))
 imagePlot(o_inter$xg,o_inter$yg,o_inter$zg,breaks=o_breaks,col=o_cols)
 polygon(c(bottoms[,2]-5,bottoms[,2],bottoms[,2]+5),c(bottoms[,1]-100,bottoms[,1],bottoms[,1]-100),col='wheat4')
+
+
