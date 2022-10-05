@@ -16,6 +16,7 @@ topo_lat <- ncvar_get(bathy, 'lat')
 topo_lon <- ncvar_get(bathy, 'lon')
 nc_close(bathy)
 
+topo <- NISTmeterTOft(topo)
 
 ################## geographic scope
 lonbox_e <- -79 ### Florida Bay
@@ -65,6 +66,31 @@ plot(world,add=T,col='gray70')
 points(data$Longitude.Decimal[orig],data$Latitude.Decimal[orig],pch=21,bg='green3',cex=2)
 points(data$Longitude.Decimal[!orig],data$Latitude.Decimal[!orig],pch=25,bg='orange2',cex=2)
 legend('bottomleft',c('Pre-2018','New stations'),pch=c(21,25),pt.bg=c('green3','orange2'),bty='n',pt.cex=2)
+mtext(expression(paste('Longitude (',degree,'W)')),1,line=3,cex=1)
+mtext(expression(paste('Latitude (',degree,'N)')),2,line=3,cex=1)
+dev.off()
+
+
+cities <- cities[c(5:8,11:14),]
+cities$pos <- c(rep(4,3),2,2,4,2,2)
+cities$name[6] <- 'RSMAS'
+
+setwd('~/Desktop/professional/projects/Postdoc_FL/figures')
+png('WS_stations_4z.png', height = 20, width = 20, units = 'in', res=300)
+plot(data$Longitude.Decimal,data$Latitude.Decimal,
+     asp=1,las=1,
+     xlab='',ylab='')
+rect(par("usr")[1],par("usr")[3],par("usr")[2],par("usr")[4],col = "lightblue1")
+plot(world,add=T,col='seashell2')
+contour(topo_lon,topo_lat,topo,add=T,levels=c(-300,-200,-100,-50,-25,-10),col='gray40')
+points(data$Longitude.Decimal,data$Latitude.Decimal,cex=2,pch=21,bg='plum1',lwd=1.5)
+text(data$Longitude.Decimal,data$Latitude.Decimal,data$Station,cex=.5)
+points(cities$longitude,cities$latitude,pch=21,bg='white',cex=2)
+points(cities$longitude,cities$latitude,pch=16,cex=1)
+text(cities$longitude,cities$latitude,cities$name,cex=2,pos=cities$pos,font=2)
+# points(data$Longitude.Decimal[orig],data$Latitude.Decimal[orig],pch=21,bg='green3',cex=2)
+# points(data$Longitude.Decimal[!orig],data$Latitude.Decimal[!orig],pch=25,bg='orange2',cex=2)
+# legend('bottomleft',c('Pre-2018','New stations'),pch=c(21,25),pt.bg=c('green3','orange2'),bty='n',pt.cex=2)
 mtext(expression(paste('Longitude (',degree,'W)')),1,line=3,cex=1)
 mtext(expression(paste('Latitude (',degree,'N)')),2,line=3,cex=1)
 dev.off()
