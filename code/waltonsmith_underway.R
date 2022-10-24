@@ -65,6 +65,7 @@ underway <- underway[-which(is.na(underway$chl.c3p.raw)),]
 ### remove low salinity and when ship not moving very fast; salinity threshold is arbitrary can plot it out to see if this value makes sense
 underway$sal.tsg[which(underway$sal.tsg<20)] <- NA
 underway <- underway[which(underway$sog>2),]
+underway <- underway[which(underway$sog>2 & underway$sog<15),]
 
 ### the convolution filters smooths the data; excessively noisy data can either slow down the algorithm and make hard to interpret krigged surfaces; smoothing span is arbitrary and may be superfluous depending upon individual cruises
 n <- 5 # convolution filter smoothing per min
@@ -119,8 +120,8 @@ plot(underway$lon,underway$lat,asp=1,typ='l')
 temp_col <- colorRampPalette(c('gray20','purple','darkorange','gold'))
 sal_col <- colorRampPalette(c('midnightblue','dodgerblue4','seagreen3','khaki1'))
 chl_col <- colorRampPalette(c('honeydew2','darkseagreen3','darkgreen'))
-turb_col <- colorRampPalette(c('cornsilk1','burlywood3','chocolate4',1))
-cdom_col <- colorRampPalette(c('lightsteelblue1','slategray3','gray10'))
+cdom_col <- colorRampPalette(c('cornsilk1','burlywood3','chocolate4',1))
+turb_col <- colorRampPalette(c('lightsteelblue1','slategray4','gray10'))
 
 #### -------------- kriging --------------
 ### krigging resolution
