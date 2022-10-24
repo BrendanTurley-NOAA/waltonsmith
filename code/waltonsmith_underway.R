@@ -58,6 +58,7 @@ underway$lon <- underway$lon.dd
 underway$lat <- underway$lat.dd
 ### copy to plot tracklines later
 orig <- underway
+plot(orig$lon,orig$lat,asp=1,typ='l')
 
 ### remove NA values; krigging hates NAs (but who doesn't)
 underway <- underway[-which(is.na(underway$chl.c3p.raw)),]
@@ -111,15 +112,15 @@ underway$turbidity <- filter(underway$turbidity.c3s.raw,rep(1/n,n),'convolution'
 
 ### subsample to make krigging go faster; also subsample span arbitrary
 underway <- underway[seq(1,nrow(underway),8),]
-
+plot(underway$lon,underway$lat,asp=1,typ='l')
 
 ### colorpalettes
 ### colors are modified versions of recommended oceanography color schemes: https://cran.r-project.org/web/packages/cmocean/vignettes/cmocean.html
 temp_col <- colorRampPalette(c('gray20','purple','darkorange','gold'))
 sal_col <- colorRampPalette(c('midnightblue','dodgerblue4','seagreen3','khaki1'))
 chl_col <- colorRampPalette(c('honeydew2','darkseagreen3','darkgreen'))
-cdom_col <- colorRampPalette(c('cornsilk1','burlywood3','chocolate4',1))
-turb_col <- colorRampPalette(c('lightsteelblue1','slategray3','gray10'))
+turb_col <- colorRampPalette(c('cornsilk1','burlywood3','chocolate4',1))
+cdom_col <- colorRampPalette(c('lightsteelblue1','slategray3','gray10'))
 
 #### -------------- kriging --------------
 ### krigging resolution
@@ -131,7 +132,9 @@ loc.grid <- list(lon=seq(min(underway$lon,na.rm=T)-adj, max(underway$lon,na.rm=T
                  lat=seq(min(underway$lat,na.rm=T)-adj, max(underway$lat,na.rm=T)+adj,resolution))
 
 ### ----------------- Chlorophyll krig -----------------
-my.krig <- spatialProcess(underway.loc, underway$chl)
+my.krig <- spatialProcess(underway.loc, underway$chl,
+                          cov.args = list(Covariance = "Matern"),
+                          Distance = "rdist.earth")
 chl_kriged <- predictSurface(my.krig, loc.grid, extrap=TRUE)
 chl_SE <- predictSurfaceSE(my.krig, loc.grid, extrap=TRUE)
 
@@ -144,7 +147,8 @@ if(min(chl_kriged$z,na.rm=T)<=min(underway$chl,na.rm=T)){
 }
 
 ### color and contour breaks
-chl_breaks <- pretty(underway$chl,n=20)
+# chl_breaks <- pretty(underway$chl,n=20)
+chl_breaks <- pretty(chl_kriged$z,n=20)
 chl_cols <- chl_col(length(chl_breaks)-1)
 
 ### adjust colorbar for logscale
@@ -158,7 +162,9 @@ if(log_c==T){
 }
 
 ### ----------------- Salinity krig -----------------
-my.krig <- spatialProcess(underway.loc, underway$sal)
+my.krig <- spatialProcess(underway.loc, underway$sal,
+                          cov.args = list(Covariance = "Matern"),
+                          Distance = "rdist.earth")
 sal_kriged <- predictSurface(my.krig, loc.grid, extrap=TRUE)
 # sal_SE <- predictSurfaceSE(my.krig, loc.grid, extrap=TRUE)
 
@@ -169,12 +175,15 @@ if(min(sal_kriged$z,na.rm=T)<=min(underway$sal,na.rm=T)){
   sal_kriged$z[which(sal_kriged$z<=min(underway$sal,na.rm=T))] <- min(underway$sal,na.rm=T)
 }
 
-sal_breaks <- pretty(underway$sal,n=20)
+# sal_breaks <- pretty(underway$sal,n=20)
+sal_breaks <- pretty(sal_kriged$z,n=20)
 sal_cols <- sal_col(length(sal_breaks)-1)
 
 
 ### ----------------- Temperature krig -----------------
-my.krig <- spatialProcess(underway.loc, underway$temp)
+my.krig <- spatialProcess(underway.loc, underway$temp,
+                          cov.args = list(Covariance = "Matern"),
+                          Distance = "rdist.earth")
 temp_kriged <- predictSurface(my.krig, loc.grid, extrap=TRUE)
 # temp_SE <- predictSurfaceSE(my.krig, loc.grid, extrap=TRUE)
 
@@ -185,12 +194,15 @@ if(min(temp_kriged$z,na.rm=T)<=min(underway$temp,na.rm=T)){
   temp_kriged$z[which(temp_kriged$z<=min(underway$temp,na.rm=T))] <- min(underway$temp,na.rm=T)
 }
 
-temp_breaks <- pretty(underway$temp,n=20)
+# temp_breaks <- pretty(underway$temp,n=20)
+temp_breaks <- pretty(temp_kriged$z,n=20)
 temp_cols <- temp_col(length(temp_breaks)-1)
 
 
 ### ----------------- cdom krig -----------------
-my.krig <- spatialProcess(underway.loc, underway$cdom)
+my.krig <- spatialProcess(underway.loc, underway$cdom,
+                          cov.args = list(Covariance = "Matern"),
+                          Distance = "rdist.earth")
 cdom_kriged <- predictSurface(my.krig, loc.grid, extrap=TRUE)
 # sal_SE <- predictSurfaceSE(my.krig, loc.grid, extrap=TRUE)
 
@@ -201,14 +213,17 @@ if(min(cdom_kriged$z,na.rm=T)<=min(underway$cdom,na.rm=T)){
   cdom_kriged$z[which(cdom_kriged$z<=min(underway$cdom,na.rm=T))] <- min(underway$cdom,na.rm=T)
 }
 
-cdom_breaks <- pretty(underway$cdom,n=20)
+# cdom_breaks <- pretty(underway$cdom,n=20)
+cdom_breaks <- pretty(cdom_kriged$z,n=20)
 cdom_cols <- cdom_col(length(cdom_breaks)-1)
 
 
 ### ----------------- turbidity krig -----------------
-my.krig <- spatialProcess(underway.loc, underway$turbidity)
+my.krig <- spatialProcess(underway.loc, underway$turbidity,
+                          cov.args = list(Covariance = "Matern"),
+                          Distance = "rdist.earth")
 turb_kriged <- predictSurface(my.krig, loc.grid, extrap=TRUE)
-# sal_SE <- predictSurfaceSE(my.krig, loc.grid, extrap=TRUE)
+# turb_SE <- predictSurfaceSE(my.krig, loc.grid, extrap=TRUE)
 
 if(max(turb_kriged$z,na.rm=T)>=max(underway$turbidity,na.rm=T)){
   turb_kriged$z[which(turb_kriged$z>=max(underway$turbidity,na.rm=T))] <- max(underway$turbidity,na.rm=T)
@@ -217,7 +232,8 @@ if(min(turb_kriged$z,na.rm=T)<=min(underway$turbidity,na.rm=T)){
   turb_kriged$z[which(turb_kriged$z<=min(underway$turbidity,na.rm=T))] <- min(underway$turbidity,na.rm=T)
 }
 
-turb_breaks <- pretty(underway$turbidity,n=20)
+# turb_breaks <- pretty(underway$turbidity,n=20)
+turb_breaks <- pretty(turb_kriged$z,n=20)
 turb_cols <- turb_col(length(turb_breaks)-1)
 
 ### ----------------- plots -----------------
