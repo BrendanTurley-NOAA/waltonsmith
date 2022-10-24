@@ -41,13 +41,16 @@ setwd("~/Desktop/professional/biblioteca/data/shapefiles/gshhg-shp-2.3.7/GSHHS_s
 world <- readOGR('GSHHS_h_L1.shp')
 ### crop to make shapefile smaller and use less RAM
 world <- crop(world, extent(-86, -79, 24.5, 28))
+### load shollow masks
+setwd('~/Desktop/professional/projects/Postdoc_FL/data/')
+masks <- read.csv('TB_SB_CH_masks.csv')
 
 
 ### load underway data
 setwd('~/Desktop/professional/projects/Postdoc_FL/data/walton_smith/')
-underway <- read.csv('WS22141_Underway.csv')
+underway <- read.csv('WS22281_out.csv')
 ### cruise name for file naming
-cruise <- 'WS22141'
+cruise <- 'WS22281'
 ### make date times; check format b/c can change between cruises
 underway$time <- mdy_hm(underway$time)
 ### rename out of convenience
@@ -100,6 +103,11 @@ underway$tempC <- filter(underway$temp.c3p,rep(1/n,n),'convolution')
 ### convert from Celsius to Fahrenheit
 underway$temp <- NISTdegCtOdegF(underway$tempC)
 
+### cdom
+underway$cdom <- filter(underway$cdom.c3p.raw,rep(1/n,n),'convolution')
+
+### turbidity
+underway$turbidity <- filter(underway$turbidity.c3s.raw,rep(1/n,n),'convolution')
 
 ### subsample to make krigging go faster; also subsample span arbitrary
 underway <- underway[seq(1,nrow(underway),8),]
@@ -109,8 +117,9 @@ underway <- underway[seq(1,nrow(underway),8),]
 ### colors are modified versions of recommended oceanography color schemes: https://cran.r-project.org/web/packages/cmocean/vignettes/cmocean.html
 temp_col <- colorRampPalette(c('gray20','purple','darkorange','gold'))
 sal_col <- colorRampPalette(c('midnightblue','dodgerblue4','seagreen3','khaki1'))
-chl_col <- colorRampPalette(c('honeydew2','darkseagreen3','forestgreen','darkslategrey'))
-
+chl_col <- colorRampPalette(c('honeydew2','darkseagreen3','darkgreen'))
+cdom_col <- colorRampPalette(c('cornsilk1','burlywood3','chocolate4',1))
+turb_col <- colorRampPalette(c('lightsteelblue1','slategray3','gray10'))
 
 #### -------------- kriging --------------
 ### krigging resolution
@@ -151,7 +160,7 @@ if(log_c==T){
 ### ----------------- Salinity krig -----------------
 my.krig <- spatialProcess(underway.loc, underway$sal)
 sal_kriged <- predictSurface(my.krig, loc.grid, extrap=TRUE)
-sal_SE <- predictSurfaceSE(my.krig, loc.grid, extrap=TRUE)
+# sal_SE <- predictSurfaceSE(my.krig, loc.grid, extrap=TRUE)
 
 if(max(sal_kriged$z,na.rm=T)>=max(underway$sal,na.rm=T)){
   sal_kriged$z[which(sal_kriged$z>=max(underway$sal,na.rm=T))] <- max(underway$sal,na.rm=T)
@@ -167,7 +176,7 @@ sal_cols <- sal_col(length(sal_breaks)-1)
 ### ----------------- Temperature krig -----------------
 my.krig <- spatialProcess(underway.loc, underway$temp)
 temp_kriged <- predictSurface(my.krig, loc.grid, extrap=TRUE)
-temp_SE <- predictSurfaceSE(my.krig, loc.grid, extrap=TRUE)
+# temp_SE <- predictSurfaceSE(my.krig, loc.grid, extrap=TRUE)
 
 if(max(temp_kriged$z,na.rm=T)>=max(underway$temp,na.rm=T)){
   temp_kriged$z[which(temp_kriged$z>=max(underway$temp,na.rm=T))] <- max(underway$temp,na.rm=T)
@@ -179,6 +188,37 @@ if(min(temp_kriged$z,na.rm=T)<=min(underway$temp,na.rm=T)){
 temp_breaks <- pretty(underway$temp,n=20)
 temp_cols <- temp_col(length(temp_breaks)-1)
 
+
+### ----------------- cdom krig -----------------
+my.krig <- spatialProcess(underway.loc, underway$cdom)
+cdom_kriged <- predictSurface(my.krig, loc.grid, extrap=TRUE)
+# sal_SE <- predictSurfaceSE(my.krig, loc.grid, extrap=TRUE)
+
+if(max(cdom_kriged$z,na.rm=T)>=max(underway$cdom,na.rm=T)){
+  cdom_kriged$z[which(cdom_kriged$z>=max(underway$cdom,na.rm=T))] <- max(underway$cdom,na.rm=T)
+}
+if(min(cdom_kriged$z,na.rm=T)<=min(underway$cdom,na.rm=T)){
+  cdom_kriged$z[which(cdom_kriged$z<=min(underway$cdom,na.rm=T))] <- min(underway$cdom,na.rm=T)
+}
+
+cdom_breaks <- pretty(underway$cdom,n=20)
+cdom_cols <- cdom_col(length(cdom_breaks)-1)
+
+
+### ----------------- turbidity krig -----------------
+my.krig <- spatialProcess(underway.loc, underway$turbidity)
+turb_kriged <- predictSurface(my.krig, loc.grid, extrap=TRUE)
+# sal_SE <- predictSurfaceSE(my.krig, loc.grid, extrap=TRUE)
+
+if(max(turb_kriged$z,na.rm=T)>=max(underway$turbidity,na.rm=T)){
+  turb_kriged$z[which(turb_kriged$z>=max(underway$turbidity,na.rm=T))] <- max(underway$turbidity,na.rm=T)
+}
+if(min(turb_kriged$z,na.rm=T)<=min(underway$turbidity,na.rm=T)){
+  turb_kriged$z[which(turb_kriged$z<=min(underway$turbidity,na.rm=T))] <- min(underway$turbidity,na.rm=T)
+}
+
+turb_breaks <- pretty(underway$turbidity,n=20)
+turb_cols <- turb_col(length(turb_breaks)-1)
 
 ### ----------------- plots -----------------
 ### limits for plotting
@@ -203,6 +243,8 @@ imagePlot(temp_kriged$x,
 # image(temp_SE,add=T,breaks=quantile(temp_SE$z,c(.4,1),na.rm=T),col='white')
 image(chl_SE,add=T,breaks=quantile(chl_SE$z,c(.4,1),na.rm=T),col='white') # chlorophyll standard error used to mask surface with SE greater than arbitrary threshold; can be adjusted for individual cruises
 image(topo_lon,topo_lat,topo,breaks=c(-1,100),col='white',add=T) # mask surface values that are in less than 1 meter depth
+polygon(masks$longitude[c(1:8,1)],masks$latitude[c(1:8,1)],col='white',border='white')
+polygon(masks$longitude[c(9:14,9)],masks$latitude[c(9:14,9)],col='white',border='white')
 plot(world,col='gray70',add=T)
 contour(topo_lon,topo_lat,topo,add=T,levels=c(-100,-50,-25,-10),col='gray40')
 # lines(orig$lon,orig$lat,col='gray70',lwd=.5) ### plot track line
@@ -225,6 +267,8 @@ imagePlot(sal_kriged$x,
 # image(sal_SE,add=T,breaks=quantile(sal_SE$z,c(.4,1),na.rm=T),col='white')
 image(chl_SE,add=T,breaks=quantile(chl_SE$z,c(.4,1),na.rm=T),col='white')
 image(topo_lon,topo_lat,topo,breaks=c(-1,100),col='white',add=T)
+polygon(masks$longitude[c(1:8,1)],masks$latitude[c(1:8,1)],col='white',border='white')
+polygon(masks$longitude[c(9:14,9)],masks$latitude[c(9:14,9)],col='white',border='white')
 plot(world,col='gray70',add=T)
 contour(topo_lon,topo_lat,topo,add=T,levels=c(-100,-50,-25,-10),col='gray40')
 # lines(orig$lon,orig$lat,col='gray70',lwd=.5)
@@ -247,6 +291,8 @@ imagePlot(chl_kriged$x,
 #         levels=chl_breaks,add=T)
 image(chl_SE,add=T,breaks=quantile(chl_SE$z,c(.4,1),na.rm=T),col='white')
 image(topo_lon,topo_lat,topo,breaks=c(-1,100),col='white',add=T)
+polygon(masks$longitude[c(1:8,1)],masks$latitude[c(1:8,1)],col='white',border='white')
+polygon(masks$longitude[c(9:14,9)],masks$latitude[c(9:14,9)],col='white',border='white')
 plot(world,col='gray70',add=T)
 contour(topo_lon,topo_lat,topo,add=T,levels=c(-100,-50,-25,-10),col='gray40')
 # lines(orig$lon,orig$lat,col='gray70',lwd=.5)
@@ -269,6 +315,46 @@ mtext(paste('Note: Data are early release and subject to further QA/QC, \nplease
 dev.off()
 
 file.copy(paste0(cruise,'_underway.png'),'latest_underway.png')
+
+
+
+imagePlot(cdom_kriged$x,
+          cdom_kriged$y,
+          cdom_kriged$z,
+          col=cdom_cols,breaks=cdom_breaks,asp=1,
+          xlab='',ylab='',las=1,
+          xlim=xlims,ylim=ylims,
+          nlevel=length(cols),legend.width=.7,legend.mar=3)
+image(chl_SE,add=T,breaks=quantile(chl_SE$z,c(.4,1),na.rm=T),col='white') # chlorophyll standard error used to mask surface with SE greater than arbitrary threshold; can be adjusted for individual cruises
+image(topo_lon,topo_lat,topo,breaks=c(-1,100),col='white',add=T) # mask surface values that are in less than 1 meter depth
+polygon(masks$longitude[c(1:8,1)],masks$latitude[c(1:8,1)],col='white',border='white')
+polygon(masks$longitude[c(9:14,9)],masks$latitude[c(9:14,9)],col='white',border='white')
+plot(world,col='gray70',add=T)
+contour(topo_lon,topo_lat,topo,add=T,levels=c(-100,-50,-25,-10),col='gray40')
+# lines(orig$lon,orig$lat,col='gray70',lwd=.5) ### plot track line
+mtext(expression(paste('Longitude (',degree,'W)')),1,line=3,cex=.75)
+mtext(expression(paste('Latitude (',degree,'N)')),2,line=3,cex=.75)
+mtext('CDOM (raw)',adj=1,cex=.75)
+
+imagePlot(turb_kriged$x,
+          turb_kriged$y,
+          turb_kriged$z,
+          col=turb_cols,breaks=turb_breaks,asp=1,
+          xlab='',ylab='',las=1,
+          xlim=xlims,ylim=ylims,
+          nlevel=length(cols),legend.width=.7,legend.mar=3)
+image(chl_SE,add=T,breaks=quantile(chl_SE$z,c(.4,1),na.rm=T),col='white') # chlorophyll standard error used to mask surface with SE greater than arbitrary threshold; can be adjusted for individual cruises
+image(topo_lon,topo_lat,topo,breaks=c(-1,100),col='white',add=T) # mask surface values that are in less than 1 meter depth
+polygon(masks$longitude[c(1:8,1)],masks$latitude[c(1:8,1)],col='white',border='white')
+polygon(masks$longitude[c(9:14,9)],masks$latitude[c(9:14,9)],col='white',border='white')
+plot(world,col='gray70',add=T)
+contour(topo_lon,topo_lat,topo,add=T,levels=c(-100,-50,-25,-10),col='gray40')
+# lines(orig$lon,orig$lat,col='gray70',lwd=.5) ### plot track line
+mtext(expression(paste('Longitude (',degree,'W)')),1,line=3,cex=.75)
+mtext(expression(paste('Latitude (',degree,'N)')),2,line=3,cex=.75)
+mtext(expression(paste('Surface Temperature (',degree,'F)')),adj=1,cex=.75)
+mtext('Turbidity (raw NTU)',adj=1,cex=.75)
+
 
 ### Code written using:
 # sessionInfo()
