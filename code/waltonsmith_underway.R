@@ -225,6 +225,14 @@ my.krig <- spatialProcess(underway.loc, underway$turbidity,
                           Distance = "rdist.earth")
 turb_kriged <- predictSurface(my.krig, loc.grid, extrap=TRUE)
 # turb_SE <- predictSurfaceSE(my.krig, loc.grid, extrap=TRUE)
+turb.tps <- Tps(underway.loc, underway$turbidity,lon.lat=T)
+turb_kriged2 <- predictSurface(turb.tps, loc.grid, extrap=TRUE)
+### check Tps versus Krig
+imagePlot(turb_kriged$x,turb_kriged$y,turb_kriged$z-turb_kriged2$z)
+lines(orig$lon,orig$lat,col='gray70',lwd=.5)
+my.krig2 <- Krig(underway.loc, underway$turbidity,
+                 Covariance = "Matern",Distance = "rdist.earth",aRange=20)
+turb_kriged3 <- predictSurface(my.krig2, loc.grid, extrap=TRUE)
 
 if(max(turb_kriged$z,na.rm=T)>=max(underway$turbidity,na.rm=T)){
   turb_kriged$z[which(turb_kriged$z>=max(underway$turbidity,na.rm=T))] <- max(underway$turbidity,na.rm=T)
