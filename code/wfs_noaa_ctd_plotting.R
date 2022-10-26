@@ -168,7 +168,7 @@ ind <- which(bottom_dat$cruise==cruise &
                bottom_dat$lat<latbox_n & bottom_dat$lat>latbox_s &
                bottom_dat$lon<lonbox_e & bottom_dat$lon>lonbox_w)
 bot_plot <- bottom_dat[ind,]
-plot(bot_plot$lon,bot_plot$lat,asp=1,cex=bot_plot$r_depth/100)
+plot(bot_plot$lon,bot_plot$lat,asp=1,cex=bot_plot$r_depth/100,col=month(bot_plot$date_utc))
 ### fix NA mlds to bottom
 bot_plot$mld[which(is.na(bot_plot$mld))] <- bot_plot$m_depth[which(is.na(bot_plot$mld))]
 
@@ -263,7 +263,7 @@ setwd('~/Desktop/noaa_ctd')
 for(i in 1:length(files)){
   data <- read.ctd(files[i])
   
-  if(data@metadata$cruise=='2203' & data@metadata$latitude<30.5 & data@metadata$longitude>=-87){
+  if(data@metadata$cruise=='0345' & data@metadata$latitude<30.5 & data@metadata$longitude>=-87){
     # plot(data@data$temperature,-data@data$depth,typ='o',col='red',pch=16)
     # plot(data@data$salinity,-data@data$depth,typ='o',col='purple',pch=16)
     # plot(data@data$fluorescence,-data@data$depth,typ='o',col='forestgreen',pch=16)
@@ -323,7 +323,7 @@ contour(topo_lon,
         topo_lat,
         topo,
         add=T,levels=c(-200,-100,-50,-25,-10),col='gray70')
-mtext('R/V GORDON GUNTER cruise track')
+mtext(paste0('R/V ',data$ship[1],' cruise track'))
 text(data$lon[1],data$lat[1],'start',pos=1,font=2)
 text(data$lon[nrow(data)],data$lat[nrow(data)],'end',pos=4,font=2)
 text(data$lon,data$lat,data$station,font=2,cex=.5)
