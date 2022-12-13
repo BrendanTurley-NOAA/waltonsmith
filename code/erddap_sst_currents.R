@@ -77,17 +77,17 @@ cols_ssta_pos<- colorRampPalette(c('firebrick4','tomato2','gray90'))
 # breaks_ssta <- seq(-round(max(abs(sst_a_grab$data$sstAnom),na.rm=T),digits=1),
 #                    round(max(abs(sst_a_grab$data$sstAnom),na.rm=T),digits=1),
 #                    by=.2)
-brks <- seq(-.4,.4,.01)
+brks <- seq(-2,2,.01)
 lm_neg <- colorRampPalette(c('dodgerblue4','deepskyblue3','lightskyblue1','gray95'))
 lm_pos <- colorRampPalette(c('gray95','rosybrown1','tomato2','red4'))
 cols <- c(lm_neg(length(which(brks<0))),
           lm_pos(length(which(brks>0))))
 
 
-mur_sst_a <- info('jplMURSST41anommday')
+# mur_sst_a <- info('jplMURSST41anommday')
 mur_sst <- info('jplMURSST41')
-currents <- info('miamicurrents') #SSH derived
-ssha <- info('nesdisSSH1day')
+# currents <- info('miamicurrents') #SSH derived
+# ssha <- info('nesdisSSH1day')
 
 ### whole Gulf of Mexico
 # latitude = c(17, 31)
@@ -100,7 +100,7 @@ latbox_s <- 24.3 ### southern edge of Key West
 latitude = c(latbox_s, latbox_n)
 longitude = c(lonbox_w, lonbox_e)
 
-time = c(paste(2022,"-09-26",sep=''), paste(2022,"-10-12",sep=''))
+time = c(paste(2022,"-09-26",sep=''), paste(2022,"-10-27",sep=''))
 sst_grab <- griddap(mur_sst, latitude=latitude, longitude=longitude, time=time, fields='analysed_sst')
 sst_1 <- erddap_extract(sst_grab,mur_sst,'analysed_sst')
 
@@ -150,3 +150,28 @@ for(i in 1:dim(sst_1$data)[2]){
 # slope[which(p_val>.1)] <- NA
 imagePlot(sst_1$lon,sst_1$lat,slope,breaks=brks,col=cols)
 # contour(sst_1$lon,sst_1$lat,p_val,levels=c(1,.1),add=T,col='gray80')
+
+
+mur_sst <- info('jplMURSST41mday')
+mur_ssta <- info('jplMURSST41anommday')
+
+lonbox_e <- -80.6 ### Florida Bay
+lonbox_w <- -99 ### mouth of Mississippi River
+latbox_n <- 30.5 ### northern coast
+latbox_s <- 24.3 ### southern edge of Key West
+latitude = c(latbox_s, latbox_n)
+longitude = c(lonbox_w, lonbox_e)
+
+time = c(paste(2022,"-07-16",sep=''), paste(2022,"-09-16",sep=''))
+sst_grab <- griddap(mur_ssta, latitude=latitude, longitude=longitude, time=time, fields='sstAnom')
+sst_1 <- erddap_extract(sst_grab,mur_ssta,'sstAnom')
+
+par(mfrow=c(2,3))
+for(i in 1:6){
+  imagePlot(sst_1$lon,
+            sst_1$lat,
+            sst_1$data[,,i],
+            asp=1,breaks=brks,col=cols)
+  mtext(month.name[i+3])
+}
+
