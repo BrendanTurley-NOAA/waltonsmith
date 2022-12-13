@@ -72,21 +72,16 @@ setwd("~/Desktop/professional/biblioteca/data/shapefiles/ne_10m_admin_0_countrie
 world <- readOGR('ne_10m_admin_0_countries.shp')
 
 # SST anomaly
-cols_ssta_neg<- colorRampPalette(c('blue4','dodgerblue1','gray90'))
-cols_ssta_pos<- colorRampPalette(c('firebrick4','tomato2','gray90'))
+cols_ssta_neg <- colorRampPalette(c('dodgerblue4','deepskyblue3','lightskyblue1','gray95'))
+cols_ssta_pos <- colorRampPalette(c('gray95','rosybrown1','tomato2','red4'))
 # breaks_ssta <- seq(-round(max(abs(sst_a_grab$data$sstAnom),na.rm=T),digits=1),
 #                    round(max(abs(sst_a_grab$data$sstAnom),na.rm=T),digits=1),
 #                    by=.2)
-brks <- seq(-2,2,.01)
-lm_neg <- colorRampPalette(c('dodgerblue4','deepskyblue3','lightskyblue1','gray95'))
-lm_pos <- colorRampPalette(c('gray95','rosybrown1','tomato2','red4'))
-cols <- c(lm_neg(length(which(brks<0))),
-          lm_pos(length(which(brks>0))))
 
 
 # mur_sst_a <- info('jplMURSST41anommday')
 mur_sst <- info('jplMURSST41')
-# currents <- info('miamicurrents') #SSH derived
+currents <- info('miamicurrents') #SSH derived
 # ssha <- info('nesdisSSH1day')
 
 ### whole Gulf of Mexico
@@ -100,7 +95,7 @@ latbox_s <- 24.3 ### southern edge of Key West
 latitude = c(latbox_s, latbox_n)
 longitude = c(lonbox_w, lonbox_e)
 
-time = c(paste(2022,"-09-26",sep=''), paste(2022,"-10-27",sep=''))
+time = c(paste(2022,"-12-04",sep=''), paste(2022,"-12-08",sep=''))
 sst_grab <- griddap(mur_sst, latitude=latitude, longitude=longitude, time=time, fields='analysed_sst')
 sst_1 <- erddap_extract(sst_grab,mur_sst,'analysed_sst')
 
@@ -108,7 +103,7 @@ uv_grab <- griddap(currents, latitude=latitude, longitude=longitude, time=time, 
 lon_o <- sort(unique(uv_grab$data$lon))
 lat_o <- sort(unique(uv_grab$data$lat))
 
-n <- 17
+n <- length(sst_1$time)
 u_array <- array(NA,dim=c(n,length(lon_o),length(lat_o)))
 v_array <- array(NA,dim=c(n,length(lon_o),length(lat_o)))
 for(i in 1:(n)){
@@ -127,7 +122,7 @@ par(mfrow=c(2,2),mar=c(4,4,1.5,1))
 for(i in 1:n){
   imagePlot(sst_1$lon,sst_1$lat,sst_1$data[,,i],
             breaks=pretty(range(sst_1$data,na.rm=T),n=50),
-            col = plasma(length(pretty(range(sst_1$data,na.rm=T),n=50))-1))
+            col = plasma(length(pretty(range(sst_1$data,na.rm=T),n=50))-1),asp=1)
   arrows(lon_lat$lon,lon_lat$lat, #RTOFs and SSH
          lon_lat$lon+(u_array[i,,]*extend),lon_lat$lat+(v_array[i,,]*extend),
          length=.025,col='gray10')
@@ -147,6 +142,12 @@ for(i in 1:dim(sst_1$data)[2]){
     }
   }
 }
+range(slope,na.rm=T)
+brks <- seq(-.75,.75,.01)
+lm_neg <- colorRampPalette(c('dodgerblue4','deepskyblue3','lightskyblue1','gray95'))
+lm_pos <- colorRampPalette(c('gray95','rosybrown1','tomato2','red4'))
+cols <- c(lm_neg(length(which(brks<0))),
+          lm_pos(length(which(brks>0))))
 # slope[which(p_val>.1)] <- NA
 imagePlot(sst_1$lon,sst_1$lat,slope,breaks=brks,col=cols)
 # contour(sst_1$lon,sst_1$lat,p_val,levels=c(1,.1),add=T,col='gray80')
@@ -162,7 +163,7 @@ latbox_s <- 24.3 ### southern edge of Key West
 latitude = c(latbox_s, latbox_n)
 longitude = c(lonbox_w, lonbox_e)
 
-time = c(paste(2022,"-07-16",sep=''), paste(2022,"-09-16",sep=''))
+time = c(paste(2022,"-12-04",sep=''), paste(2022,"-12-08",sep=''))
 sst_grab <- griddap(mur_ssta, latitude=latitude, longitude=longitude, time=time, fields='sstAnom')
 sst_1 <- erddap_extract(sst_grab,mur_ssta,'sstAnom')
 
