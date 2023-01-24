@@ -78,9 +78,9 @@ strat_p_col <- colorRampPalette(rev(c('darkgreen','green3','palegreen2','gray90'
 setwd('~/Desktop/professional/projects/Postdoc_FL/data/walton_smith/')
 setwd('~/Downloads')
 list.files()
-data <- read.csv('WS_22337_initial.csv')
+data <- read.csv('WS23011_SampleLog_initial.csv')
 ### cruise name for file naming
-cruise <- 'WS22337'
+cruise <- 'WS23011'
 ### check lat/lons
 lons_cal <- -(data$Longitude.Deg+data$Longitude.Min/60)
 lats_cal <- (data$Latitude.Deg+data$Latitude.Min/60)
@@ -265,6 +265,7 @@ dtdz_kriged2 <- predictSurface(my.krig2, loc.grid, extrap=T)
 dtdz_se2 <- predictSurfaceSE(my.krig2, loc.grid, extrap=T)
 
 dtdz_brks <- pretty(dtdz_kriged2$z,n=20)
+dtdz_brks <- pretty(dt_dz,n=20)
 dtdz_cols <- c(strat_n_col(length(which(dtdz_brks<0))),
                strat_p_col(length(which(dtdz_brks>0))))
 
@@ -325,7 +326,7 @@ plot(world,col='gray70',add=T)
 contour(topo_lon,topo_lat,topo,add=T,levels=c(-100,-50,-25,-10),col='gray40')
 points(data3$Longitude.Decimal,data3$Latitude.Decimal,pch=16,col='gray50',cex=.5)
 # mtext(expression(paste('Longitude (',degree,'W)')),1,line=3,cex=.75)
-# mtext(expression(paste('Latitude (',degree,'N)')),2,line=3,cex=.75)
+mtext(expression(paste('Latitude (',degree,'N)')),2,line=3,cex=.75)
 mtext('Salinity (PSU)',adj=1,cex=.75)
 
 imagePlot(do_kriged2$x,
@@ -366,15 +367,15 @@ mtext(paste('Note: Data are early release and subject to further QA/QC, \nplease
 dev.off()
 
 
-png(paste0(cruise,'_bottom.png'), height = 10, width = 9, units = 'in', res=300)
-par(mfrow=c(2,2),mar=c(4.5,5,2,3),oma=c(1,1,4,2))
+png(paste0(cruise,'_bottom_tracks.png'), height = 10, width = 9, units = 'in', res=300)
+par(mfrow=c(2,2),mar=c(4.5,5,2,3),oma=c(4,1,4,2))
 imagePlot(temp_kriged2$x,
           temp_kriged2$y,
           temp_kriged2$z,
           col=temp_cols,breaks=temp_breaks,asp=1,
           xlab='',ylab='',las=1,
           xlim=xlims,ylim=ylims,
-          nlevel=length(temp_cols),legend.width=.7,legend.mar=3)
+          nlevel=length(temp_cols),legend.width=1.2,legend.mar=3)
 polygon(masks$longitude[c(1:8,1)],masks$latitude[c(1:8,1)],col='white',border='white')
 polygon(masks$longitude[c(9:14,9)],masks$latitude[c(9:14,9)],col='white',border='white')
 # contour(temp_kriged2$x,
@@ -396,7 +397,7 @@ imagePlot(sal_kriged2$x,
           col=sal_cols,breaks=sal_breaks,asp=1,
           xlab='',ylab='',las=1,
           xlim=xlims,ylim=ylims,
-          nlevel=length(sal_cols),legend.width=.7,legend.mar=3)
+          nlevel=length(sal_cols),legend.width=1.2,legend.mar=3)
 polygon(masks$longitude[c(1:8,1)],masks$latitude[c(1:8,1)],col='white',border='white')
 polygon(masks$longitude[c(9:14,9)],masks$latitude[c(9:14,9)],col='white',border='white')
 # contour(sal_kriged2$x,
@@ -419,7 +420,7 @@ imagePlot(do_kriged2$x,
           col=cols,breaks=breaks,asp=1,
           xlab='',ylab='',las=1,
           xlim=xlims,ylim=ylims,
-          nlevel=length(cols),legend.width=.7,legend.mar=3)
+          nlevel=length(cols),legend.width=1.2,legend.mar=3)
 polygon(masks$longitude[c(1:8,1)],masks$latitude[c(1:8,1)],col='white',border='white')
 polygon(masks$longitude[c(9:14,9)],masks$latitude[c(9:14,9)],col='white',border='white')
 # contour(do_kriged2$x,
@@ -448,7 +449,7 @@ plot(world,col='gray70',add=T)
 contour(topo_lon,topo_lat,topo,add=T,levels=c(-100,-50,-25,-10),col='gray40')
 points(data3$Longitude.Decimal,data3$Latitude.Decimal,pch=16,col=plasma(nrow(data3)),typ='o')
 text(data3$Longitude.Decimal[1],data3$Latitude.Decimal[1],'Start',pos=2,font=2)
-text(data3$Longitude.Decimal[nrow(data3)],data3$Latitude.Decimal[nrow(data3)],'End',pos=2,font=2)
+text(data3$Longitude.Decimal[nrow(data3)],data3$Latitude.Decimal[nrow(data3)],'End',pos=1,font=2)
 mtext(expression(paste('Longitude (',degree,'W)')),1,line=3,cex=.75)
 # mtext(expression(paste('Latitude (',degree,'N)')),2,line=3,cex=.75)
 mtext('Cruise track',adj=1,cex=.75)
