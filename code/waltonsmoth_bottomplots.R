@@ -172,11 +172,11 @@ rmse2 <- sqrt(sum(resid.Krig(my.krig2)^2)/length(resid.Krig(my.krig2)))
 ### which is smallest?
 cbind(rmse1,rmse2)
 
-# temp_kriged2 <- predictSurface(my.krig, loc.grid, extrap=T)
-# temp_se2 <- predictSurfaceSE(my.krig, loc.grid, extrap=T)
+temp_kriged2 <- predictSurface(my.krig, loc.grid, extrap=T)
+temp_se2 <- predictSurfaceSE(my.krig, loc.grid, extrap=T)
 ### depth as covariate
-temp_kriged2 <- predictSurface(my.krig2, loc.grid, ZGrid=Z,extrap=T)
-temp_se2 <- predictSurfaceSE(my.krig2, loc.grid, ZGrid=Z,extrap=T)
+# temp_kriged2 <- predictSurface(my.krig2, loc.grid, ZGrid=Z,extrap=T)
+# temp_se2 <- predictSurfaceSE(my.krig2, loc.grid, ZGrid=Z,extrap=T)
 
 if(max(temp_kriged2$z,na.rm=T)>max(data3[,temp_ind],na.rm=T)){
   temp_kriged2$z[which(temp_kriged2$z>max(data3[,temp_ind],na.rm=T))] <- max(data3[,temp_ind],na.rm=T)
@@ -244,14 +244,14 @@ rmse3 <- sqrt(sum(resid.Krig(my.krig3)^2)/length(resid.Krig(my.krig3)))
 ### which is smallest?
 cbind(rmse1,rmse2,rmse3)
 
-# do_kriged2 <- predictSurface(my.krig, loc.grid, extrap=T)
-# do_se2 <- predictSurfaceSE(my.krig, loc.grid, extrap=T)
+do_kriged2 <- predictSurface(my.krig, loc.grid, extrap=T)
+do_se2 <- predictSurfaceSE(my.krig, loc.grid, extrap=T)
 ### depth as covariate
 # do_kriged2 <- predictSurface(my.krig2, loc.grid, ZGrid=Z,extrap=T)
 # do_se2 <- predictSurfaceSE(my.krig2, loc.grid, ZGrid=Z,extrap=T)
 ### temperatureas covariate
-do_kriged2 <- predictSurface(my.krig3, loc.grid, ZGrid=temp_kriged2,extrap=T)
-do_se2 <- predictSurfaceSE(my.krig3, loc.grid, ZGrid=Z,extrap=T)
+# do_kriged2 <- predictSurface(my.krig3, loc.grid, ZGrid=temp_kriged2,extrap=T)
+# do_se2 <- predictSurfaceSE(my.krig3, loc.grid, ZGrid=Z,extrap=T)
 
 if(max(do_kriged2$z,na.rm=T)>max(data3[,oxy_ind])){
   do_kriged2$z[which(do_kriged2$z>max(data3[,oxy_ind]))] <- max(data3[,oxy_ind])
@@ -282,7 +282,7 @@ dsdz_kriged2 <- predictSurface(my.krig2, loc.grid, extrap=T)
 dsdz_se2 <- predictSurfaceSE(my.krig2, loc.grid, extrap=T)
 
 # dsdz_brks <- pretty(dsdz_kriged2$z,n=20)
-dtdz_brks <- pretty(ds_dz,n=20)
+dsdz_brks <- pretty(ds_dz,n=20)
 dsdz_cols <- c(strat_n_col(length(which(dsdz_brks<0))),
                strat_p_col(length(which(dsdz_brks>0))))
 
