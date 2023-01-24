@@ -509,10 +509,10 @@ points(data3$Longitude.Decimal,data3$Latitude.Decimal,pch=16,col='gray50',cex=.5
 
 
 setwd("~/Desktop/professional/projects/Postdoc_FL/figures")
-png('new_plot.png',width=9,height=12,units='in',pointsize=12,res=300)
-par(mfrow=c(2,2),mar=c(4,4,3,4),oma=c(5,0,3,1))
+png('new_plot.png',width=10,height=18,units='in',pointsize=12,res=300)
+par(mfrow=c(3,2),mar=c(4,4,3,4),oma=c(5,0,3,1))
 data_plot(data3$Longitude.Decimal,data3$Latitude.Decimal,data3$Temperature.CTD.data,temp_col,title=expression(paste('Bottom temperature (',degree,'F)')))
-data_plot(data3$Longitude.Decimal,data3$Latitude.Decimal,data3$Salinity.CTD.data,sal_col,title='Bottom salinity (psu)')
+data_plot(data3$Longitude.Decimal,data3$Latitude.Decimal,data3$Salinity.CTD.data,sal_col,title='Bottom salinity (PSU)')
 
 plot(data3$Longitude.Decimal,data3$Latitude.Decimal,pch=21,asp=1,cex=2,las=1,
      bg=cols[as.numeric(cut(data3$Oxygen.mg.l..CTD.data,breaks))],
@@ -525,4 +525,30 @@ contour(topo_lon,
         topo_lat,
         topo,
         add=T,levels=c(-200,-100,-50,-25,-10),col='gray70')
+
+
+plot(data3$Longitude.Decimal,data3$Latitude.Decimal,pch=21,asp=1,cex=2,las=1,
+     bg=dtdz_cols[as.numeric(cut(dt_dz,dtdz_brks))],
+     col=dtdz_cols[as.numeric(cut(dt_dz,dtdz_brks))],
+     xlab='',ylab='')
+imagePlot(zlim=range(dtdz_brks,na.rm=T),breaks=dtdz_brks,col=dtdz_cols,legend.only=TRUE,legend.width = 1.5)
+mtext('Temperature stratification (bottom - surface)')
+plot(world,add=T,col='gray80')
+contour(topo_lon,
+        topo_lat,
+        topo,
+        add=T,levels=c(-200,-100,-50,-25,-10),col='gray70')
+
+plot(data3$Longitude.Decimal,data3$Latitude.Decimal,pch=21,asp=1,cex=2,las=1,
+     bg=dsdz_cols[as.numeric(cut(ds_dz,dsdz_brks))],
+     col=dsdz_cols[as.numeric(cut(ds_dz,dsdz_brks))],
+     xlab='',ylab='')
+imagePlot(zlim=range(dsdz_brks,na.rm=T),breaks=dsdz_brks,col=dsdz_cols,legend.only=TRUE,legend.width = 1.5)
+mtext('Salinity stratification (bottom - surface)')
+plot(world,add=T,col='gray80')
+contour(topo_lon,
+        topo_lat,
+        topo,
+        add=T,levels=c(-200,-100,-50,-25,-10),col='gray70')
+
 dev.off()
