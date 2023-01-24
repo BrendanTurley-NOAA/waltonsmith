@@ -64,7 +64,7 @@ masks <- read.csv('TB_SB_CH_masks.csv')
 
 ### colorpalettes
 ### breaks and colors
-temp_col <- colorRampPalette(c('gray20','purple','darkorange','gold'))
+temp_col <- colorRampPalette(c('gray20','purple3','darkorange','gold'))
 sal_col <- colorRampPalette(c('midnightblue','dodgerblue4','seagreen3','khaki1'))
 chl_col <- colorRampPalette(c('honeydew2','darkseagreen3','forestgreen','darkslategrey'))
 ox.col1 <- colorRampPalette(c(1,'firebrick4','red'))
@@ -126,7 +126,10 @@ for(i in 1:length(ind1)){
   remove[i] <- ifelse(data3$Depth[ind1[i]]>data3$Depth[ind2[i]],ind2[i],ind1[i])
 }
 ### remove shallower samples
-data3 <- data3[-remove,]
+if(!is.na(remove)){
+  data3 <- data3[-remove,]  
+}
+
 
 data1 <- data1[is.element(data1$Station,data3$Station),]
 
@@ -169,11 +172,11 @@ rmse2 <- sqrt(sum(resid.Krig(my.krig2)^2)/length(resid.Krig(my.krig2)))
 ### which is smallest?
 cbind(rmse1,rmse2)
 
-temp_kriged2 <- predictSurface(my.krig, loc.grid, extrap=T)
-temp_se2 <- predictSurfaceSE(my.krig, loc.grid, extrap=T)
+# temp_kriged2 <- predictSurface(my.krig, loc.grid, extrap=T)
+# temp_se2 <- predictSurfaceSE(my.krig, loc.grid, extrap=T)
 ### depth as covariate
-# temp_kriged2 <- predictSurface(my.krig2, loc.grid, ZGrid=Z,extrap=T)
-# temp_se2 <- predictSurfaceSE(my.krig2, loc.grid, ZGrid=Z,extrap=T)
+temp_kriged2 <- predictSurface(my.krig2, loc.grid, ZGrid=Z,extrap=T)
+temp_se2 <- predictSurfaceSE(my.krig2, loc.grid, ZGrid=Z,extrap=T)
 
 if(max(temp_kriged2$z,na.rm=T)>max(data3[,temp_ind],na.rm=T)){
   temp_kriged2$z[which(temp_kriged2$z>max(data3[,temp_ind],na.rm=T))] <- max(data3[,temp_ind],na.rm=T)
@@ -185,6 +188,10 @@ if(min(temp_kriged2$z,na.rm=T)<min(data3[,temp_ind],na.rm=T)){
 temp_breaks <- pretty(data3[,temp_ind],n=20)
 temp_cols <- temp_col(length(temp_breaks)-1)
 
+### convert to temp F
+tempF <- NISTdegCtOdegF(temp_kriged2$z)
+tempF_breaks <- pretty(NISTdegCtOdegF(data3[,temp_ind]),n=20)
+tempF_cols <- temp_col(length(tempF_breaks)-1)
 
 ### ----------------- Salinity krig -----------------
 sal_ind <- grep('salinity',names(data3),ignore.case = T)
@@ -237,14 +244,14 @@ rmse3 <- sqrt(sum(resid.Krig(my.krig3)^2)/length(resid.Krig(my.krig3)))
 ### which is smallest?
 cbind(rmse1,rmse2,rmse3)
 
-do_kriged2 <- predictSurface(my.krig, loc.grid, extrap=T)
-do_se2 <- predictSurfaceSE(my.krig, loc.grid, extrap=T)
+# do_kriged2 <- predictSurface(my.krig, loc.grid, extrap=T)
+# do_se2 <- predictSurfaceSE(my.krig, loc.grid, extrap=T)
 ### depth as covariate
 # do_kriged2 <- predictSurface(my.krig2, loc.grid, ZGrid=Z,extrap=T)
 # do_se2 <- predictSurfaceSE(my.krig2, loc.grid, ZGrid=Z,extrap=T)
 ### temperatureas covariate
-# do_kriged2 <- predictSurface(my.krig3, loc.grid, ZGrid=temp_kriged2,extrap=T)
-# do_se2 <- predictSurfaceSE(my.krig3, loc.grid, ZGrid=Z,extrap=T)
+do_kriged2 <- predictSurface(my.krig3, loc.grid, ZGrid=temp_kriged2,extrap=T)
+do_se2 <- predictSurfaceSE(my.krig3, loc.grid, ZGrid=Z,extrap=T)
 
 if(max(do_kriged2$z,na.rm=T)>max(data3[,oxy_ind])){
   do_kriged2$z[which(do_kriged2$z>max(data3[,oxy_ind]))] <- max(data3[,oxy_ind])
@@ -264,17 +271,18 @@ my.krig2 <- spatialProcess(ctd.loc,dt_dz)
 dtdz_kriged2 <- predictSurface(my.krig2, loc.grid, extrap=T)
 dtdz_se2 <- predictSurfaceSE(my.krig2, loc.grid, extrap=T)
 
-dtdz_brks <- pretty(dtdz_kriged2$z,n=20)
+# dtdz_brks <- pretty(dtdz_kriged2$z,n=20)
 dtdz_brks <- pretty(dt_dz,n=20)
 dtdz_cols <- c(strat_n_col(length(which(dtdz_brks<0))),
                strat_p_col(length(which(dtdz_brks>0))))
 
-### ----------------- dt_dz krig -----------------
+### ----------------- ds_dz krig -----------------
 my.krig2 <- spatialProcess(ctd.loc,ds_dz)
 dsdz_kriged2 <- predictSurface(my.krig2, loc.grid, extrap=T)
 dsdz_se2 <- predictSurfaceSE(my.krig2, loc.grid, extrap=T)
 
-dsdz_brks <- pretty(dsdz_kriged2$z,n=20)
+# dsdz_brks <- pretty(dsdz_kriged2$z,n=20)
+dtdz_brks <- pretty(ds_dz,n=20)
 dsdz_cols <- c(strat_n_col(length(which(dsdz_brks<0))),
                strat_p_col(length(which(dsdz_brks>0))))
 
@@ -286,11 +294,11 @@ png(paste0(cruise,'_bottom.png'), height = 11, width = 4, units = 'in', res=300)
 par(mfrow=c(3,1),mar=c(4.5,4,2,1),oma=c(4,1,4,1))
 imagePlot(temp_kriged2$x,
           temp_kriged2$y,
-          temp_kriged2$z,
-          col=temp_cols,breaks=temp_breaks,asp=1,
+          tempF,
+          col=tempF_cols,breaks=tempF_breaks,asp=1,
           xlab='',ylab='',las=1,
           xlim=xlims,ylim=ylims,
-          nlevel=length(temp_cols),legend.width=.7,legend.mar=3)
+          nlevel=length(tempF_cols),legend.width=.7,legend.mar=3)
 polygon(masks$longitude[c(1:8,1)],masks$latitude[c(1:8,1)],col='white',border='white')
 polygon(masks$longitude[c(9:14,9)],masks$latitude[c(9:14,9)],col='white',border='white')
 # contour(temp_kriged2$x,
@@ -304,7 +312,7 @@ contour(topo_lon,topo_lat,topo,add=T,levels=c(-100,-50,-25,-10),col='gray40')
 points(data3$Longitude.Decimal,data3$Latitude.Decimal,pch=16,col='gray50',cex=.5)
 # mtext(expression(paste('Longitude (',degree,'W)')),1,line=3,cex=.75)
 mtext(expression(paste('Latitude (',degree,'N)')),2,line=3,cex=.75)
-mtext(expression(paste('Bottom Temperature (',degree,'C)')),adj=1,cex=.75)
+mtext(expression(paste('Bottom Temperature (',degree,'F)')),adj=1,cex=.75)
 
 imagePlot(sal_kriged2$x,
           sal_kriged2$y,
