@@ -78,9 +78,10 @@ strat_p_col <- colorRampPalette(rev(c('darkgreen','green3','palegreen2','gray90'
 setwd('~/Desktop/professional/projects/Postdoc_FL/data/walton_smith/')
 setwd('~/Downloads')
 list.files()
-data <- read.csv('WS23011_SampleLog_initial.csv')
+data <- read.csv('WS_23061_SampleLog.csv')
+data <- data[which(data$CTD.F=='C'),]
 ### cruise name for file naming
-cruise <- 'WS23011'
+cruise <- 'WS23061'
 ### check lat/lons
 lons_cal <- -(data$Longitude.Deg+data$Longitude.Min/60)
 lats_cal <- (data$Latitude.Deg+data$Latitude.Min/60)
@@ -511,7 +512,7 @@ points(data3$Longitude.Decimal,data3$Latitude.Decimal,pch=16,col='gray50',cex=.5
 setwd("~/Desktop/professional/projects/Postdoc_FL/figures")
 png('new_plot.png',width=10,height=18,units='in',pointsize=12,res=300)
 par(mfrow=c(3,2),mar=c(4,4,3,4),oma=c(5,0,3,1))
-data_plot(data3$Longitude.Decimal,data3$Latitude.Decimal,data3$Temperature.CTD.data,temp_col,title=expression(paste('Bottom temperature (',degree,'F)')))
+data_plot(data3$Longitude.Decimal,data3$Latitude.Decimal,data3$Temperature.CTD.data,temp_col,title=expression(paste('Bottom temperature (',degree,'C)')))
 data_plot(data3$Longitude.Decimal,data3$Latitude.Decimal,data3$Salinity.CTD.data,sal_col,title='Bottom salinity (PSU)')
 
 plot(data3$Longitude.Decimal,data3$Latitude.Decimal,pch=21,asp=1,cex=2,las=1,
@@ -552,3 +553,4 @@ contour(topo_lon,
         add=T,levels=c(-200,-100,-50,-25,-10),col='gray70')
 
 dev.off()
+
