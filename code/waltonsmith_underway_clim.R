@@ -112,6 +112,7 @@ for(i in ind){
   } else {
     ind_t <- which(names(data)=='temp.tsg')
   }
+  # data <- data[order(data[,ind_t],decreasing = F),]
   temp <- data[,ind_t]
   # st_geometry(temp) <- NULL
   temp[which(temp<0)] <- NA
