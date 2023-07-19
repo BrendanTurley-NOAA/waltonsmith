@@ -127,7 +127,7 @@ for(i in ind){
        pch=16,col=cols[as.numeric(tmp_cut)],
        asp=1,xlab='',ylab='')
   plot(world,add=T)
-  mtext(paste0(out[i,1],", ",year(dats)[i],'-',month.abb[month(dats)[i]]))
+  mtext(paste0(out_all[i,1],", ",year(dats)[i],'-',month.abb[month(dats)[i]]))
   
 }
 setwd('~/Desktop/professional/projects/Postdoc_FL/figures/')
@@ -203,6 +203,7 @@ for(i in ind){
   plot(world,add=T,col='gray70')
   points(data_fknms$lon.dd,data_fknms$lat.dd,
        pch=16,col=cols[as.numeric(tmp_cut)])
+  mtext(paste0(out_fknms[i,1],", ",year(dats)[i],'-',month.abb[month(dats)[i]]))
   
   # plot(data_fknms$lon.dd,data_fknms$lat.dd,
   #      pch=16,col=cols[as.numeric(tmp_cut)],
