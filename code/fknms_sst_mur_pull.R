@@ -117,7 +117,7 @@ m <- 1
 n <- 0
 for(i in 2003:2023){
   print(i)
-  end <- ifelse(i==2023,'-07-25','-12-31')
+  end <- ifelse(i==2023,'-07-26','-12-31')
   time <- c(paste(i,"-01-01",sep=''),paste(i,end,sep='')) 
   sst_grab <- griddap(mur_sst, latitude=latitude, longitude=longitude, time=time, fields='analysed_sst')
   dats <- unique(sst_grab$data$time)
@@ -139,9 +139,42 @@ for(i in 2003:2023){
   # }
   # cache_delete_all(force=T)
 }
+setwd("/Users/Brendan/Desktop/professional/projects/Postdoc_FL/data")
+names(sst_day) <- c('date_utc','sst_c')
+write.csv(sst_day,'sst_mur_day.csv')
+sst_day$date_utc <- ymd_hms(sst_day$date_utc)
+sst_day$jday <- yday(sst_day$date_utc)
+sst_day$year <- year(sst_day$date_utc)
+sst_day$jday <- yday(sst_day$date_utc)
+sst_s <- sst_day[which(sst_day$year!=2023),]
+sst_m <- setNames(aggregate(sst_s$sst_c,by=list(sst_s$jday),mean,na.rm=T),
+                  c('jday','sst_c_m'))
+sst_q <- setNames(aggregate(sst_s$sst_c,by=list(sst_s$jday),quantile,c(.9,.95),na.rm=T),
+                  c('jday','quantiles'))
+
 cache_list()
 cache_delete_all(force=T)
 
+plot(sst_day$date_utc,sst_day$sst_c,typ='l')
+
+plot(sst_day$jday,sst_day$sst_c,typ='n')
+for(i in 2003:2023){
+  tmp <- sst_day[which(sst_day$year==i),]
+  if(i==2023){
+    cols <- 'red'
+    lwds <- 2
+  }else{
+    cols <- 'gray50'
+    lwds <- 1
+  }
+  points(tmp$jday,tmp$sst_c,typ='l',col=cols,lwd=lwds)
+}
+points(sst_m$jday,sst_m$sst_c_m,typ='l',lwd=2)
+points(sst_q$jday,sst_q$quantiles[,1],typ='l',lwd=2,col=4)
+points(sst_q$jday,sst_q$quantiles[,2],typ='l',lwd=2,col=3)
+
+hist(sst_day$sst_c[which(month(sst_day$date_utc)==7)],breaks=seq(27.5,32.5,.25))
+boxplot(sst_day$sst_c~month(sst_day$date_utc))
 
 time = c(paste(2023,"-01-01",sep=''), paste(2023,"-01-02",sep=''))
 sst_grab <- griddap(mur_sst, latitude=latitude, longitude=longitude, time=time, fields='analysed_sst')
