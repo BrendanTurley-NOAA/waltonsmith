@@ -47,7 +47,7 @@ fil <- list.files()
 fil <- fil[-which(fil=="WS17177_out.csv")]
 
 i=1
-out_all <- out_fknms <- data.frame(matrix(NA,length(fil),8))
+out_all <- out_fknms <- out_swfl <- data.frame(matrix(NA,length(fil),8))
 for(i in 1:length(fil)){
   data <- read.csv(fil[i])
   data <- data[which(data$sog>2 & data$sog<15),]
@@ -60,6 +60,9 @@ for(i in 1:length(fil)){
   mat <- st_intersects(point.sf, fknms)
   ind_fknms <- apply(mat, 1, any)
   data_fknms <- data[ind_fknms,]
+  ind_swfl <- setdiff(which(data$lon.dd<(-80.8) & data$lat.dd>24.7),
+                      which(ind_fknms))
+  data_swfl <- data[ind_swfl,]
   
   if(any(names(data)=='temp.c3p')){
     ind <- which(names(data)=='temp.c3p')
@@ -68,18 +71,24 @@ for(i in 1:length(fil)){
   }
   
   temp <- data[,ind]
-  # st_geometry(temp) <- NULL
   temp[which(temp<0)] <- NA
   
   temp2 <- data_fknms[,ind]
   temp2[which(temp2<0)] <- NA
   
+  temp3 <- data_swfl[,ind]
+  temp3[which(temp3<0)] <- NA
+  
   out_all[i,] <- c(substr(fil[i],1,7),data$time[1],data$time[nrow(data)],quantile(temp,na.rm=T))
   out_fknms[i,] <- c(substr(fil[i],1,7),data_fknms$time[1],data_fknms$time[nrow(data_fknms)],quantile(temp2,na.rm=T))
+  if(length(temp3)>0){
+    out_swfl[i,] <- c(substr(fil[i],1,7),data_swfl$time[1],data_swfl$time[nrow(data_swfl)],quantile(temp3,na.rm=T))
+  }
   
-  par(mfrow=c(1,2))
-  hist(temp)
-  hist(temp2)
+  # par(mfrow=c(1,3))
+  # hist(temp)
+  # hist(temp2)
+  # hist(temp3)
   
   # plot(data$lon.dd,data$lat.dd,
   #      pch=16,col=cmocean('curl')(nrow(data)),
@@ -94,6 +103,9 @@ table(year(dats),month(dats))
 
 ind <- which(month(dats)>5 & month(dats)<9)
 
+
+
+#### ------------- overall climatology maps ------------- 
 brks <- seq(28.5,33.5,.25)
 hists <- data.frame(matrix(NA,length(ind),length(brks)-1))
 tmps <- list()
@@ -136,6 +148,7 @@ dev.off()
 tmps <- unlist(tmps)
 h2 <- hist(tmps,breaks=brks)
 
+#### ------------- overall climatology hist ------------- 
 cols2 <- cmocean('thermal')(length(brks)-1)
 at <- seq(0,15,1.5)
 
@@ -161,7 +174,7 @@ axis(2,at[length(ind)+1],'Overall',las=2)
 dev.off()
 
 
-
+#### ------------- FKNMS climatology maps ------------- 
 brks <- seq(29.75,33.5,.25)
 hists <- data.frame(matrix(NA,length(ind),length(brks)-1))
 tmps <- list()
@@ -219,6 +232,7 @@ dev.off()
 tmps <- unlist(tmps)
 h2 <- hist(tmps,breaks=brks)
 
+#### ------------- FKNMS climatology hist ------------- 
 cols2 <- cmocean('thermal')(length(brks)-1)
 at <- seq(0,15,1.5)
 
@@ -242,6 +256,98 @@ rect(quantile(tmps,.25,na.rm=T),rep(at[length(ind)+1],15),quantile(tmps,.75,na.r
 segments(median(tmps,na.rm=T),rep(at[length(ind)+1]-.03,15),median(tmps,na.rm=T),rep(at[length(ind)+1]-.21,15),col='gold',lwd=2,lend=2)
 axis(2,at[length(ind)+1],'Overall',las=2)
 dev.off()
+
+
+
+#### ------------- SWFL climatology maps ------------- 
+brks <- seq(29.25,33.5,.25)
+hists <- data.frame(matrix(NA,length(ind),length(brks)-1))
+tmps <- list()
+png('WS_underway_summer_clim_maps_swfl.png',width = 9, height = 9, res=300, units='in')
+par(mar=c(2,2,2,2),mfrow=c(2,2))
+for(i in ind){
+  setwd('~/Desktop/professional/projects/Postdoc_FL/data/walton_smith/underway_data')
+  data <- read.csv(fil[i])
+  data <- data[which(data$sog>2 & data$sog<15),]
+  if(any(is.na(data$lon.dd))){
+    data <- data[-which(is.na(data$lon.dd)),]
+  }
+  point.sf <- st_as_sf(data, coords = c("lon.dd","lat.dd"))
+  st_crs(point.sf) <- st_crs(fknms)
+  # data <- st_filter(point.sf, fknms)
+  mat <- st_intersects(point.sf, fknms)
+  ind_fknms <- apply(mat, 1, any)
+  ind_swfl <- setdiff(which(data$lon.dd<(-80.8) & data$lat.dd>24.7),
+                      which(ind_fknms))
+  data_swfl <- data[ind_swfl,]
+  
+  if(any(names(data)=='temp.c3p')){
+    ind_t <- which(names(data)=='temp.c3p')
+  } else {
+    ind_t <- which(names(data)=='temp.tsg')
+  }
+  temp <- data_swfl[,ind_t]
+  # st_geometry(temp) <- NULL
+  temp[which(temp<0)] <- NA
+  tmps[[which(i==ind)]] <- temp
+  
+  h <- hist(temp,breaks=brks,plot=F)
+  hists[which(i==ind),] <- h$density
+  
+  tmp_cut <- cut(temp,brks)
+  cols <- cmocean('thermal')(length(levels(tmp_cut)))
+  
+  plot(data$lon.dd,data$lat.dd,
+       typ='l',asp=1,xlab='',ylab='',lwd=2,col='orange3',
+       xlim=range(data_swfl$lon.dd),ylim=range(data_swfl$lat.dd))
+  plot(st_geometry(fknms),add=T,border='forestgreen',lwd=2)
+  plot(world,add=T,col='gray70')
+  points(data_swfl$lon.dd,data_swfl$lat.dd,
+         pch=16,col=cols[as.numeric(tmp_cut)])
+  mtext(paste0(out_swfl[i,1],", ",year(dats)[i],'-',month.abb[month(dats)[i]]))
+  
+  # plot(data_fknms$lon.dd,data_fknms$lat.dd,
+  #      pch=16,col=cols[as.numeric(tmp_cut)],
+  #      asp=1,xlab='',ylab='')
+  # plot(world,add=T)
+  # plot(st_geometry(fknms),add=T,border=3)
+  # mtext(paste0(out[i,1],", ",year(dats)[i],'-',month.abb[month(dats)[i]]))
+  
+}
+setwd('~/Desktop/professional/projects/Postdoc_FL/figures/')
+dev.off()
+tmps <- unlist(tmps)
+h2 <- hist(tmps,breaks=brks)
+
+
+#### ------------- SWFL climatology hist ------------- 
+cols2 <- cmocean('thermal')(length(brks)-1)
+at <- seq(0,30,2)
+
+setwd('~/Desktop/professional/projects/Postdoc_FL/figures/')
+png('WS_underway_summer_clim_swfl.png',width = 8, height = 9, res=300, units='in')
+par(mar=c(5,5,2,2),mfrow=c(1,1))
+plot(0,0,xlim=c(29.25,33.5),ylim=c(-.25,(nrow(hists)+1)*1.75),yaxt='n',xlab='Underway Temperature (C)',ylab='')
+axis(2,at[1:length(ind)],paste0(year(dats)[ind],'-',month.abb[month(dats)[ind]]),las=2)
+for(i in 1:nrow(hists)){
+  rect(h$mids-.125,rep(at[i],15),h$mids+.125,hists[i,]+at[i],col=cols2)
+  arrows(as.numeric(out_swfl[ind[i],4]),rep(at[i]-.125,1),as.numeric(out_swfl[ind[i],8]),rep(at[i]-.125,1),
+         col=1,code=3,angle=90,length=.05,lend=2,lwd=2)
+  rect(as.numeric(out_swfl[ind[i],5]),rep(at[i],15),as.numeric(out_swfl[ind[i],7]),rep(at[i]-.25,15),col='gray60')
+  segments(as.numeric(out_swfl[ind[i],6]),rep(at[i]-.03,15),as.numeric(out_swfl[ind[i],6]),rep(at[i]-.21,15),col='gold',lwd=2,lend=2)
+  
+}
+rect(h$mids-.125,rep(at[length(ind)+1],15),h$mids+.125,h2$density+at[length(ind)+1],col=cols2)
+arrows(min(tmps,na.rm=T),rep(at[length(ind)+1]-.125,1),max(tmps,na.rm=T),rep(at[length(ind)+1]-.125,1),
+       col=1,code=3,angle=90,length=.05,lend=2,lwd=2)
+rect(quantile(tmps,.25,na.rm=T),rep(at[length(ind)+1],15),quantile(tmps,.75,na.rm=T),rep(at[length(ind)+1]-.25,15),col='gray60')
+segments(median(tmps,na.rm=T),rep(at[length(ind)+1]-.03,15),median(tmps,na.rm=T),rep(at[length(ind)+1]-.21,15),col='gold',lwd=2,lend=2)
+axis(2,at[length(ind)+1],'Overall',las=2)
+dev.off()
+
+
+
+
 
 
 setwd('~/Desktop/professional/projects/Postdoc_FL/figures/')
