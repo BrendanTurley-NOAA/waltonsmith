@@ -9,6 +9,24 @@ query <- ed_search_adv(query='Walton Smith',url='https://gcoos5.geos.tamu.edu/er
                        page_size = 4000,
                        minLon = -88, maxLon = -80,
                        minLat = 24, maxLat = 29)
+
+query_res <- as.data.frame(query$info)
+ws_info <- base::strsplit(as.character(query_res[,1]),',')
+ws_date <- ymd(lapply(ws_info,function(x)x[4]))
+ws_lonlat <- lapply(ws_info,function(x)x[5])
+test <- base::strsplit(unlist(as.character(ws_lonlat)),' ')
+test2 <- gsub('[A-Z]', '', unlist(test))
+lons <- as.numeric(test2[seq(3,length(test2),3)])
+lats <- as.numeric(test2[seq(2,length(test2),3)])
+plot(-lons,lats,asp=1)
+
+table(month(ws_date),year(ws_date))
+
+ind_sum <- which(month(ws_date)>5 & month(ws_date)<9)
+tail(query_res[ind_sum,],n=50)
+
+plot(-lons[ind_sum],lats[ind_sum],asp=1)
+
 profile_out <- data.frame(matrix(NA,dim(query$info)[1]*50,9))
 sum_out <- data.frame(matrix(NA,dim(query$info)[1],17))
 m <- 1
