@@ -24,8 +24,10 @@ table(month(ws_date),year(ws_date))
 
 ind_sum <- which(month(ws_date)>5 & month(ws_date)<9)
 tail(query_res[ind_sum,],n=50)
+table(month(ws_date[ind_sum]),year(ws_date[ind_sum]))
 
 plot(-lons[ind_sum],lats[ind_sum],asp=1)
+plot(year(ws_date[ind_sum]),yday(ws_date[ind_sum]))
 
 profile_out <- data.frame(matrix(NA,dim(query$info)[1]*50,9))
 sum_out <- data.frame(matrix(NA,dim(query$info)[1],17))
