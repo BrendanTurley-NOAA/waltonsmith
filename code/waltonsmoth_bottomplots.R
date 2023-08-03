@@ -265,8 +265,8 @@ if(min(do_kriged2$z,na.rm=T)<min(data3[,oxy_ind])){
 
 breaks <- pretty(data3[,oxy_ind],n=20)
 cols <- c(ox.col1(length(breaks[breaks<2])),
-          ox.col2(length(breaks[breaks>=2 & breaks<3.5])),
-          ox.col3(length(breaks[breaks>=3.5])-1))
+          ox.col2(length(breaks[breaks>=2 & breaks<=3.5])),
+          ox.col3(length(breaks[breaks>3.5])-1))
 
 
 ### ----------------- dt_dz krig -----------------
