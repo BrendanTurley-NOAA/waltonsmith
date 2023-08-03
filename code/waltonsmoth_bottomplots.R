@@ -4,9 +4,10 @@ gc()
 library(fields)
 library(lubridate)
 library(NISTunits)
-library(raster)
+# library(raster)
 library(ncdf4)
-library(rgdal)
+library(terra)
+# library(rgdal)
 
 source('~/Desktop/professional/biblioteca/scripts/color_breaks.R')
 
@@ -18,12 +19,12 @@ data_plot <- function(longitude, latitude, data, color_fxn, n_breaks=15, title='
        bg=cols[as.numeric(cut(data,breaks))],
        col=cols[as.numeric(cut(data,breaks))],
        xlab=xlab,ylab=ylab)
-  imagePlot(zlim=range(breaks,na.rm=T),breaks=breaks,col=cols,legend.only=TRUE,legend.width = 1.5)
   plot(world,add=T,col='gray80')
   contour(topo_lon,
           topo_lat,
           topo,
           add=T,levels=c(-200,-100,-50,-25,-10),col='gray70')
+  imagePlot(zlim=range(breaks,na.rm=T),breaks=breaks,col=cols,legend.only=TRUE,legend.width = 1.3,legend.mar=3)
   mtext(title)
 }
 
@@ -54,7 +55,7 @@ topo <- topo[ind_lon,ind_lat]
 # setwd("~/Desktop/professional/biblioteca/data/shapefiles/ne_10m_admin_0_countries")
 # world <- readOGR('ne_10m_admin_0_countries.shp')
 setwd("~/Desktop/professional/biblioteca/data/shapefiles/gshhg-shp-2.3.7/GSHHS_shp/h/")
-world <- readOGR('GSHHS_h_L1.shp')
+world <- vect('GSHHS_h_L1.shp')
 world <- crop(world, extent(-86, -79, 24.5, 30))
 # setwd("~/Desktop/professional/biblioteca/data/shapefiles/Florida_Shoreline__1_to_40%2C000_Scale_-shp")
 # FL <- readOGR('Florida_Shoreline__1_to_40%2C000_Scale_.shp')
@@ -72,21 +73,22 @@ ox.col2 <- colorRampPalette(c('darkgoldenrod4','goldenrod2','gold'))
 # ox.col3 <- colorRampPalette(c('dodgerblue4','deepskyblue2','cadetblue1'))
 ox.col3 <- colorRampPalette(c(1,'dodgerblue4','deepskyblue2','cadetblue1','azure'))
 ex_col <- colorRampPalette(c('gray20','dodgerblue4','indianred3','gold1'))
-strat_n_col <- colorRampPalette(c('purple4','purple2','orchid1','gray90'),interpolate='spline',bias=.9)
-strat_p_col <- colorRampPalette(rev(c('darkgreen','green3','palegreen2','gray90')),interpolate='spline',bias=.9)
+strat_n_col <- colorRampPalette(c('purple4','purple2','orchid1','gray90'))
+strat_p_col <- colorRampPalette(rev(c('darkgreen','green3','palegreen2','gray90')))
 
 setwd('~/Desktop/professional/projects/Postdoc_FL/data/walton_smith/')
 setwd('~/Downloads')
 list.files()
-data <- read.csv('WS_23061_SampleLog.csv')
+data <- read.csv('WS23203_SampleLog.csv')
 data <- data[which(data$CTD.F=='C'),]
 ### cruise name for file naming
-cruise <- 'WS23061'
+cruise <- 'WS23203'
 ### check lat/lons
 lons_cal <- -(data$Longitude.Deg+data$Longitude.Min/60)
 lats_cal <- (data$Latitude.Deg+data$Latitude.Min/60)
 
 plot(data$Longitude.Decimal,data$Latitude.Decimal,asp=1)
+points(lons_cal,lats_cal,pch=16,col=2,cex=.5)
 
 
 ### surface
@@ -276,6 +278,18 @@ dtdz_se2 <- predictSurfaceSE(my.krig2, loc.grid, extrap=T)
 dtdz_brks <- pretty(dt_dz,n=20)
 dtdz_cols <- c(strat_n_col(length(which(dtdz_brks<0))),
                strat_p_col(length(which(dtdz_brks>0))))
+if(length(which(dtdz_brks>0))>length(which(dtdz_brks<0))){
+  dtdz_cols <- c(strat_n_col(length(which(dtdz_brks>0))),
+                 strat_p_col(length(which(dtdz_brks>0))))
+  cols_ind <- abs(length(which(dtdz_brks>0))+length(which(dtdz_brks<0))-length(dtdz_cols))
+  dtdz_cols <- dtdz_cols[-c(1:cols_ind)]
+}
+if(length(which(dtdz_brks>0))<length(which(dtdz_brks<0))){
+  dtdz_cols <- c(strat_n_col(length(which(dtdz_brks<0))),
+                 strat_p_col(length(which(dtdz_brks<0))))
+  cols_ind <- abs(length(which(dtdz_brks>0))+length(which(dtdz_brks<0))-length(dtdz_cols))
+  dtdz_cols <- dtdz_cols[-c((length(dtdz_cols)-cols_ind+1):length(dtdz_cols))]
+}
 
 ### ----------------- ds_dz krig -----------------
 my.krig2 <- spatialProcess(ctd.loc,ds_dz)
@@ -286,10 +300,362 @@ dsdz_se2 <- predictSurfaceSE(my.krig2, loc.grid, extrap=T)
 dsdz_brks <- pretty(ds_dz,n=20)
 dsdz_cols <- c(strat_n_col(length(which(dsdz_brks<0))),
                strat_p_col(length(which(dsdz_brks>0))))
+if(length(which(dsdz_brks>0))>length(which(dsdz_brks<0))){
+  dsdz_cols <- c(strat_n_col(length(which(dsdz_brks>0))),
+                 strat_p_col(length(which(dsdz_brks>0))))
+  cols_ind <- abs(length(which(dsdz_brks>0))+length(which(dsdz_brks<0))-length(dsdz_cols))
+  dsdz_cols <- dsdz_cols[-c(1:cols_ind)]
+}
+if(length(which(dsdz_brks>0))<length(which(dsdz_brks<0))){
+  dsdz_cols <- c(strat_n_col(length(which(dsdz_brks<0))),
+                 strat_p_col(length(which(dsdz_brks<0))))
+  cols_ind <- abs(length(which(dsdz_brks>0))+length(which(dsdz_brks<0))-length(dsdz_cols))
+  dsdz_cols <- dsdz_cols[-c((length(dsdz_cols)-cols_ind+1):length(dsdz_cols))]
+}
+
 
 
 ### ----------------- plots -----------------
+
+
+tempf_krigp <- function(xlab=T,ylab=T){
+  imagePlot(temp_kriged2$x,
+            temp_kriged2$y,
+            tempF,
+            col=tempF_cols,breaks=tempF_breaks,asp=1,
+            xlab='',ylab='',las=1,
+            xlim=xlims,ylim=ylims,
+            nlevel=length(tempF_cols),legend.width=1.2,legend.mar=3)
+  polygon(masks$longitude[c(1:8,1)],masks$latitude[c(1:8,1)],col='white',border='white')
+  polygon(masks$longitude[c(9:14,9)],masks$latitude[c(9:14,9)],col='white',border='white')
+  # contour(temp_kriged2$x,
+  #         temp_kriged2$y,
+  #         temp_kriged2$z,
+  #         levels=temp_breaks,add=T)
+  image(temp_se2,add=T,breaks=quantile(temp_se2$z,c(.5,1),na.rm=T),col='white')
+  image(topo_lon,topo_lat,topo,breaks=c(-1,100),col='white',add=T)
+  plot(world,col='gray70',add=T)
+  contour(topo_lon,topo_lat,topo,add=T,levels=c(-100,-50,-25,-10),col='gray40')
+  points(data3$Longitude.Decimal,data3$Latitude.Decimal,pch=16,col='gray50',cex=.5)
+  mtext(expression(paste('Bottom Temperature (',degree,'F)')),adj=1,cex=.75)
+  if(xlab==T){
+    mtext(expression(paste('Longitude (',degree,'W)')),1,line=3,cex=.75)
+  }
+  if(ylab==T){
+    mtext(expression(paste('Latitude (',degree,'N)')),2,line=3,cex=.75)
+  }
+}
+
+tempc_krigp <- function(xlab=T,ylab=T){
+  imagePlot(temp_kriged2$x,
+            temp_kriged2$y,
+            temp_kriged2$z,
+            col=temp_cols,breaks=temp_breaks,asp=1,
+            xlab='',ylab='',las=1,
+            xlim=xlims,ylim=ylims,
+            nlevel=length(temp_cols),legend.width=1.2,legend.mar=3)
+  polygon(masks$longitude[c(1:8,1)],masks$latitude[c(1:8,1)],col='white',border='white')
+  polygon(masks$longitude[c(9:14,9)],masks$latitude[c(9:14,9)],col='white',border='white')
+  # contour(temp_kriged2$x,
+  #         temp_kriged2$y,
+  #         temp_kriged2$z,
+  #         levels=temp_breaks,add=T)
+  image(temp_se2,add=T,breaks=quantile(temp_se2$z,c(.5,1),na.rm=T),col='white')
+  image(topo_lon,topo_lat,topo,breaks=c(-1,100),col='white',add=T)
+  plot(world,col='gray70',add=T)
+  contour(topo_lon,topo_lat,topo,add=T,levels=c(-100,-50,-25,-10),col='gray40')
+  points(data3$Longitude.Decimal,data3$Latitude.Decimal,pch=16,col='gray50',cex=.5)
+  mtext(expression(paste('Bottom Temperature (',degree,'C)')),adj=1,cex=.75)
+  if(xlab==T){
+    mtext(expression(paste('Longitude (',degree,'W)')),1,line=3,cex=.75)
+  }
+  if(ylab==T){
+    mtext(expression(paste('Latitude (',degree,'N)')),2,line=3,cex=.75)
+  }
+}
+
+tempc_pt <- function(xlab=T,ylab=T){
+  data_plot(data3$Longitude.Decimal,
+            data3$Latitude.Decimal,
+            data3$Temperature.CTD.data,
+            temp_col,
+            title=expression(paste('Bottom temperature (',degree,'C)')))
+  if(xlab==T){
+    mtext(expression(paste('Longitude (',degree,'W)')),1,line=3,cex=.75)
+  }
+  if(ylab==T){
+    mtext(expression(paste('Latitude (',degree,'N)')),2,line=3,cex=.75)
+  }
+}
+
+sal_krigp <- function(xlab=T,ylab=T){
+  imagePlot(sal_kriged2$x,
+            sal_kriged2$y,
+            sal_kriged2$z,
+            col=sal_cols,breaks=sal_breaks,asp=1,
+            xlab='',ylab='',las=1,
+            xlim=xlims,ylim=ylims,
+            nlevel=length(sal_cols),legend.width=1.2,legend.mar=3)
+  polygon(masks$longitude[c(1:8,1)],masks$latitude[c(1:8,1)],col='white',border='white')
+  polygon(masks$longitude[c(9:14,9)],masks$latitude[c(9:14,9)],col='white',border='white')
+  # contour(sal_kriged2$x,
+  #         sal_kriged2$y,
+  #         sal_kriged2$z,
+  #         levels=sal_breaks,add=T)
+  # image(sal_se2,add=T,breaks=quantile(sal_se2$z,c(.5,1),na.rm=T),col='white')
+  image(temp_se2,add=T,breaks=quantile(temp_se2$z,c(.5,1),na.rm=T),col='white')
+  image(topo_lon,topo_lat,topo,breaks=c(-1,100),col='white',add=T)
+  plot(world,col='gray70',add=T)
+  contour(topo_lon,topo_lat,topo,add=T,levels=c(-100,-50,-25,-10),col='gray40')
+  points(data3$Longitude.Decimal,data3$Latitude.Decimal,pch=16,col='gray50',cex=.5)
+  mtext('Salinity (PSU)',adj=1,cex=.75)
+  if(xlab==T){
+    mtext(expression(paste('Longitude (',degree,'W)')),1,line=3,cex=.75)
+  }
+  if(ylab==T){
+    mtext(expression(paste('Latitude (',degree,'N)')),2,line=3,cex=.75)
+  }
+}
+
+sal_pts <- function(xlab=T,ylab=T){
+  data_plot(data3$Longitude.Decimal,
+            data3$Latitude.Decimal,
+            data3$Salinity.CTD.data,
+            sal_col,
+            title='Bottom salinity (PSU)')
+  if(xlab==T){
+    mtext(expression(paste('Longitude (',degree,'W)')),1,line=3,cex=.75)
+  }
+  if(ylab==T){
+    mtext(expression(paste('Latitude (',degree,'N)')),2,line=3,cex=.75)
+  }
+}
+
+do_krigp <- function(xlab=T,ylab=T){
+  imagePlot(do_kriged2$x,
+            do_kriged2$y,
+            do_kriged2$z,
+            col=cols,breaks=breaks,asp=1,
+            xlab='',ylab='',las=1,
+            xlim=xlims,ylim=ylims,
+            nlevel=length(cols),legend.width=1.2 ,legend.mar=3)
+  polygon(masks$longitude[c(1:8,1)],masks$latitude[c(1:8,1)],col='white',border='white')
+  polygon(masks$longitude[c(9:14,9)],masks$latitude[c(9:14,9)],col='white',border='white')
+  # contour(do_kriged2$x,
+  #         do_kriged2$y,
+  #         do_kriged2$z,
+  #         levels=breaks,add=T)
+  # image(do_se2,add=T,breaks=quantile(do_se2$z,c(.45,1),na.rm=T),col='white')
+  image(temp_se2,add=T,breaks=quantile(temp_se2$z,c(.5,1),na.rm=T),col='white')
+  image(topo_lon,topo_lat,topo,breaks=c(-1,100),col='white',add=T)
+  plot(world,col='gray70',add=T)
+  contour(topo_lon,topo_lat,topo,add=T,levels=c(-100,-50,-25,-10),col='gray40')
+  points(data3$Longitude.Decimal,data3$Latitude.Decimal,pch=16,col='gray50',cex=.5)
+  mtext(expression(paste('Bottom DO (mg l'^-1,')')),adj=1,cex=.75)
+  if(xlab==T){
+    mtext(expression(paste('Longitude (',degree,'W)')),1,line=3,cex=.75)
+  }
+  if(ylab==T){
+    mtext(expression(paste('Latitude (',degree,'N)')),2,line=3,cex=.75)
+  }
+}
+
+do_pts <- function(xlab=T,ylab=T){
+  plot(data3$Longitude.Decimal,data3$Latitude.Decimal,pch=21,asp=1,cex=2,las=1,
+       bg=cols[as.numeric(cut(data3$Oxygen.mg.l..CTD.data,breaks))],
+       col=cols[as.numeric(cut(data3$Oxygen.mg.l..CTD.data,breaks))],
+       xlab='',ylab='')
+  plot(world,add=T,col='gray80')
+  contour(topo_lon,
+          topo_lat,
+          topo,
+          add=T,levels=c(-200,-100,-50,-25,-10),col='gray70')
+  imagePlot(zlim=range(breaks,na.rm=T),breaks=breaks,col=cols,legend.only=TRUE,legend.width = 1.2,legend.mar=3)
+  mtext(expression(paste('Bottom DO (mg l'^-1,')')),adj=1,cex=.75)
+  if(xlab==T){
+    mtext(expression(paste('Longitude (',degree,'W)')),1,line=3,cex=.75)
+  }
+  if(ylab==T){
+    mtext(expression(paste('Latitude (',degree,'N)')),2,line=3,cex=.75)
+  }
+}
+
+ctrack_plot <- function(xlab=T,ylab=T){
+  image(do_kriged2$x,
+        do_kriged2$y,
+        do_kriged2$z,
+        col=cols,breaks=breaks,asp=1,
+        xlab='',ylab='',las=1,
+        xlim=xlims,ylim=ylims,
+        nlevel=length(cols),legend.width=.7,legend.mar=3)
+  image(topo_lon,topo_lat,topo,breaks=c(-200,100),col='white',add=T)
+  plot(world,col='gray70',add=T)
+  contour(topo_lon,topo_lat,topo,add=T,levels=c(-100,-50,-25,-10),col='gray40')
+  points(data3$Longitude.Decimal,data3$Latitude.Decimal,pch=16,col=plasma(nrow(data3)),typ='o',cex=2)
+  text(data3$Longitude.Decimal[1],data3$Latitude.Decimal[1],'Start',pos=2,font=2)
+  text(data3$Longitude.Decimal[nrow(data3)],data3$Latitude.Decimal[nrow(data3)],'End',pos=1,font=2)
+  mtext('Cruise track',adj=1,cex=.75)
+  if(xlab==T){
+    mtext(expression(paste('Longitude (',degree,'W)')),1,line=3,cex=.75)
+  }
+  if(ylab==T){
+    mtext(expression(paste('Latitude (',degree,'N)')),2,line=3,cex=.75)
+  }
+}
+
+temp_strat_krigp <- function(xlab=T,ylab=T){
+  imagePlot(dtdz_kriged2$x,
+            dtdz_kriged2$y,
+            dtdz_kriged2$z,
+            col=dtdz_cols,breaks=dtdz_brks,asp=1,
+            xlab='',ylab='',las=1,
+            xlim=xlims,ylim=ylims,
+            nlevel=length(dtdz_cols),legend.width=.7,legend.mar=3)
+  polygon(masks$longitude[c(1:8,1)],masks$latitude[c(1:8,1)],col='white',border='white')
+  polygon(masks$longitude[c(9:14,9)],masks$latitude[c(9:14,9)],col='white',border='white')
+  image(temp_se2,add=T,breaks=quantile(temp_se2$z,c(.4,1),na.rm=T),col='white')
+  image(topo_lon,topo_lat,topo,breaks=c(-2,100),col='white',add=T)
+  plot(world,col='gray70',add=T)
+  contour(topo_lon,topo_lat,topo,add=T,levels=c(-100,-50,-25,-10),col='gray40')
+  points(data3$Longitude.Decimal,data3$Latitude.Decimal,pch=16,col='gray50',cex=.5)
+  mtext('Temperature stratification (bottom - surface)')
+  if(xlab==T){
+    mtext(expression(paste('Longitude (',degree,'W)')),1,line=3,cex=.75)
+  }
+  if(ylab==T){
+    mtext(expression(paste('Latitude (',degree,'N)')),2,line=3,cex=.75)
+  }
+}
+
+tempstrat_pts <- function(xlab=T,ylab=T){
+  plot(data3$Longitude.Decimal,data3$Latitude.Decimal,pch=21,asp=1,cex=2,las=1,
+       bg=dtdz_cols[as.numeric(cut(dt_dz,dtdz_brks))],
+       col=dtdz_cols[as.numeric(cut(dt_dz,dtdz_brks))],
+       xlab='',ylab='')
+  plot(world,add=T,col='gray80')
+  contour(topo_lon,
+          topo_lat,
+          topo,
+          add=T,levels=c(-200,-100,-50,-25,-10),col='gray70')
+  imagePlot(zlim=range(dtdz_brks,na.rm=T),breaks=dtdz_brks,col=dtdz_cols,legend.only=TRUE,legend.width = 1.2,legend.mar=3)
+  mtext('Temperature stratification (bottom - surface)')
+  if(xlab==T){
+    mtext(expression(paste('Longitude (',degree,'W)')),1,line=3,cex=.75)
+  }
+  if(ylab==T){
+    mtext(expression(paste('Latitude (',degree,'N)')),2,line=3,cex=.75)
+  }
+}
+
+salstrat_krigp <- function(xlab=T,ylab=T){
+  imagePlot(dsdz_kriged2$x,
+            dsdz_kriged2$y,
+            dsdz_kriged2$z,
+            col=dsdz_cols,breaks=dsdz_brks,asp=1,
+            xlab='',ylab='',las=1,
+            xlim=xlims,ylim=ylims,
+            nlevel=length(dsdz_cols),legend.width=.7,legend.mar=3)
+  polygon(masks$longitude[c(1:8,1)],masks$latitude[c(1:8,1)],col='white',border='white')
+  polygon(masks$longitude[c(9:14,9)],masks$latitude[c(9:14,9)],col='white',border='white')
+  image(temp_se2,add=T,breaks=quantile(temp_se2$z,c(.4,1),na.rm=T),col='white')
+  image(topo_lon,topo_lat,topo,breaks=c(-2,100),col='white',add=T)
+  plot(world,col='gray70',add=T)
+  contour(topo_lon,topo_lat,topo,add=T,levels=c(-100,-50,-25,-10),col='gray40')
+  points(data3$Longitude.Decimal,data3$Latitude.Decimal,pch=16,col='gray50',cex=.5)
+  mtext('Salinity stratification (bottom - surface)')
+  if(xlab==T){
+    mtext(expression(paste('Longitude (',degree,'W)')),1,line=3,cex=.75)
+  }
+  if(ylab==T){
+    mtext(expression(paste('Latitude (',degree,'N)')),2,line=3,cex=.75)
+  }
+}
+
+salstrat_pts <- function(xlab=T,ylab=T){
+  plot(data3$Longitude.Decimal,data3$Latitude.Decimal,pch=21,asp=1,cex=2,las=1,
+       bg=dsdz_cols[as.numeric(cut(ds_dz,dsdz_brks))],
+       col=dsdz_cols[as.numeric(cut(ds_dz,dsdz_brks))],
+       xlab='',ylab='')
+  plot(world,add=T,col='gray80')
+  contour(topo_lon,
+          topo_lat,
+          topo,
+          add=T,levels=c(-200,-100,-50,-25,-10),col='gray70')
+  imagePlot(zlim=range(dsdz_brks,na.rm=T),breaks=dsdz_brks,col=dsdz_cols,legend.only=TRUE,legend.width = 1.2,legend.mar=3)
+  mtext('Salinity stratification (bottom - surface)')
+  if(xlab==T){
+    mtext(expression(paste('Longitude (',degree,'W)')),1,line=3,cex=.75)
+  }
+  if(ylab==T){
+    mtext(expression(paste('Latitude (',degree,'N)')),2,line=3,cex=.75)
+  }
+}
+
 setwd('~/Documents/R/Github/waltonsmith/figures')
+setwd("~/Desktop/professional/projects/Postdoc_FL/figures")
+
+png(paste0(cruise,'_bottom.png'), height = 15, width = 5, units = 'in', res=300)
+par(mfrow=c(3,1),mar=c(4.5,4,2,2),oma=c(4,1,4,1))
+tempf_krigp()
+sal_krigp()
+do_pts()
+mtext('Walton Smith Bulletin',
+      outer=T,line=1,side=3,font=2,at=.05,adj=0,cex=1.25)
+mtext(paste('Collected:',
+            paste(
+              paste(month.abb[month(data3$Date.GMT[1])],
+                    day(data3$Date.GMT[1])),
+              paste(month.abb[month(data3$Date.GMT[nrow(data3)])],
+                    day(data3$Date.GMT[nrow(data3)])),
+              sep='-')),
+      outer=T,line=-.1,side=3,at=.05,adj=0)
+mtext(paste('Note: Data are early release and subject to further QA/QC, \nplease contact brendan.turley@noaa.gov with concerns \nProcessed: ',as.Date(Sys.time())),
+      outer=T,line=2,side=1,col='red',font=2,at=.01,adj=0,cex=.75)
+dev.off()
+
+png(paste0(cruise,'_bottom2.png'), height = 15, width = 5, units = 'in', res=300)
+par(mfrow=c(3,1),mar=c(4.5,4,2,5.5),oma=c(4,1,4,2))
+tempc_pt()
+sal_pts()
+do_pts()
+mtext('Walton Smith Bulletin',
+      outer=T,line=1,side=3,font=2,at=.05,adj=0,cex=1.25)
+mtext(paste('Collected:',
+            paste(
+              paste(month.abb[month(data3$Date.GMT[1])],
+                    day(data3$Date.GMT[1])),
+              paste(month.abb[month(data3$Date.GMT[nrow(data3)])],
+                    day(data3$Date.GMT[nrow(data3)])),
+              sep='-')),
+      outer=T,line=-.1,side=3,at=.05,adj=0)
+mtext(paste('Note: Data are early release and subject to further QA/QC, \nplease contact brendan.turley@noaa.gov with concerns \nProcessed: ',as.Date(Sys.time())),
+      outer=T,line=2,side=1,col='red',font=2,at=.01,adj=0,cex=.75)
+dev.off()
+
+
+setwd("~/Desktop/professional/projects/Postdoc_FL/figures")
+png(paste0(cruise,'_bottom_tracks.png'),width=8,height=15,units='in',pointsize=12,res=300)
+par(mfcol=c(3,2),mar=c(4,4,3,4),oma=c(4,1,4,2))
+tempc_pt()
+tempstrat_pts()
+sal_pts()
+salstrat_pts()
+do_pts()
+ctrack_plot()
+mtext('Walton Smith Bulletin',
+      outer=T,line=1,side=3,font=2,at=.05,adj=0,cex=1.25)
+mtext(paste('Collected:',
+            paste(
+              paste(month.abb[month(data3$Date.GMT[1])],
+                    day(data3$Date.GMT[1])),
+              paste(month.abb[month(data3$Date.GMT[nrow(data3)])],
+                    day(data3$Date.GMT[nrow(data3)])),
+              sep='-')),
+      outer=T,line=-.1,side=3,at=.05,adj=0)
+mtext(paste('Note: Data are early release and subject to further QA/QC, \nplease contact brendan.turley@noaa.gov with concerns \nProcessed: ',as.Date(Sys.time())),
+      outer=T,line=2,side=1,col='red',font=2,at=.01,adj=0,cex=.75)
+dev.off()
+
 
 png(paste0(cruise,'_bottom.png'), height = 11, width = 4, units = 'in', res=300)
 par(mfrow=c(3,1),mar=c(4.5,4,2,1),oma=c(4,1,4,1))
@@ -510,23 +876,22 @@ points(data3$Longitude.Decimal,data3$Latitude.Decimal,pch=16,col='gray50',cex=.5
 
 
 setwd("~/Desktop/professional/projects/Postdoc_FL/figures")
-png('new_plot.png',width=10,height=18,units='in',pointsize=12,res=300)
-par(mfrow=c(3,2),mar=c(4,4,3,4),oma=c(5,0,3,1))
-data_plot(data3$Longitude.Decimal,data3$Latitude.Decimal,data3$Temperature.CTD.data,temp_col,title=expression(paste('Bottom temperature (',degree,'C)')))
-data_plot(data3$Longitude.Decimal,data3$Latitude.Decimal,data3$Salinity.CTD.data,sal_col,title='Bottom salinity (PSU)')
+png('new_plot.png',width=8,height=15,units='in',pointsize=12,res=300)
+par(mfcol=c(3,2),mar=c(4,4,3,4),oma=c(5,0,3,1))
+# data_plot(data3$Longitude.Decimal,data3$Latitude.Decimal,data3$Temperature.CTD.data,temp_col,title=expression(paste('Bottom temperature (',degree,'C)')))
+# data_plot(data3$Longitude.Decimal,data3$Latitude.Decimal,data3$Salinity.CTD.data,sal_col,title='Bottom salinity (PSU)')
 
 plot(data3$Longitude.Decimal,data3$Latitude.Decimal,pch=21,asp=1,cex=2,las=1,
-     bg=cols[as.numeric(cut(data3$Oxygen.mg.l..CTD.data,breaks))],
-     col=cols[as.numeric(cut(data3$Oxygen.mg.l..CTD.data,breaks))],
+     bg=temp_cols[as.numeric(cut(data3$Temperature.CTD.data,temp_breaks))],
+     col=temp_cols[as.numeric(cut(data3$Temperature.CTD.data,temp_breaks))],
      xlab='',ylab='')
-imagePlot(zlim=range(breaks,na.rm=T),breaks=breaks,col=cols,legend.only=TRUE,legend.width = 1.5)
-mtext(expression(paste('Bottom dissolved oxygen (mg l'^-1,')')))
+imagePlot(zlim=range(temp_breaks,na.rm=T),breaks=temp_breaks,col=temp_cols,legend.only=TRUE,legend.width = 1.5)
+mtext(expression(paste('Bottom temperature (',degree,'C)')))
 plot(world,add=T,col='gray80')
 contour(topo_lon,
         topo_lat,
         topo,
         add=T,levels=c(-200,-100,-50,-25,-10),col='gray70')
-
 
 plot(data3$Longitude.Decimal,data3$Latitude.Decimal,pch=21,asp=1,cex=2,las=1,
      bg=dtdz_cols[as.numeric(cut(dt_dz,dtdz_brks))],
@@ -534,6 +899,18 @@ plot(data3$Longitude.Decimal,data3$Latitude.Decimal,pch=21,asp=1,cex=2,las=1,
      xlab='',ylab='')
 imagePlot(zlim=range(dtdz_brks,na.rm=T),breaks=dtdz_brks,col=dtdz_cols,legend.only=TRUE,legend.width = 1.5)
 mtext('Temperature stratification (bottom - surface)')
+plot(world,add=T,col='gray80')
+contour(topo_lon,
+        topo_lat,
+        topo,
+        add=T,levels=c(-200,-100,-50,-25,-10),col='gray70')
+
+plot(data3$Longitude.Decimal,data3$Latitude.Decimal,pch=21,asp=1,cex=2,las=1,
+     bg=sal_cols[as.numeric(cut(data3$Salinity.CTD.data,sal_breaks))],
+     col=sal_cols[as.numeric(cut(data3$Salinity.CTD.data,sal_breaks))],
+     xlab='',ylab='')
+imagePlot(zlim=range(sal_breaks,na.rm=T),breaks=sal_breaks,col=sal_cols,legend.only=TRUE,legend.width = 1.5)
+mtext('Bottom salinity (PSU)')
 plot(world,add=T,col='gray80')
 contour(topo_lon,
         topo_lat,
@@ -552,5 +929,33 @@ contour(topo_lon,
         topo,
         add=T,levels=c(-200,-100,-50,-25,-10),col='gray70')
 
+plot(data3$Longitude.Decimal,data3$Latitude.Decimal,pch=21,asp=1,cex=2,las=1,
+     bg=cols[as.numeric(cut(data3$Oxygen.mg.l..CTD.data,breaks))],
+     col=cols[as.numeric(cut(data3$Oxygen.mg.l..CTD.data,breaks))],
+     xlab='',ylab='')
+imagePlot(zlim=range(breaks,na.rm=T),breaks=breaks,col=cols,legend.only=TRUE,legend.width = 1.5)
+mtext(expression(paste('Bottom dissolved oxygen (mg l'^-1,')')))
+plot(world,add=T,col='gray80')
+contour(topo_lon,
+        topo_lat,
+        topo,
+        add=T,levels=c(-200,-100,-50,-25,-10),col='gray70')
+
+image(do_kriged2$x,
+      do_kriged2$y,
+      do_kriged2$z,
+      col=cols,breaks=breaks,asp=1,
+      xlab='',ylab='',las=1,
+      xlim=xlims,ylim=ylims,
+      nlevel=length(cols),legend.width=.7,legend.mar=3)
+image(topo_lon,topo_lat,topo,breaks=c(-200,100),col='white',add=T)
+plot(world,col='gray70',add=T)
+contour(topo_lon,topo_lat,topo,add=T,levels=c(-100,-50,-25,-10),col='gray40')
+points(data3$Longitude.Decimal,data3$Latitude.Decimal,pch=16,cex=2,col=plasma(nrow(data3)),typ='o')
+text(data3$Longitude.Decimal[1],data3$Latitude.Decimal[1],'Start',pos=2,font=2)
+text(data3$Longitude.Decimal[nrow(data3)],data3$Latitude.Decimal[nrow(data3)],'End',pos=1,font=2)
+mtext(expression(paste('Longitude (',degree,'W)')),1,line=3,cex=.75)
+# mtext(expression(paste('Latitude (',degree,'N)')),2,line=3,cex=.75)
+mtext('Cruise track',adj=1,cex=.75)
 dev.off()
 
