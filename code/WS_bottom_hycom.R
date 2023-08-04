@@ -3,9 +3,8 @@ gc()
 
 library(fields)
 library(lubridate)
-library(raster)
 library(ncdf4)
-library(rgdal)
+library(terra)
 
 ### bathymetric data
 setwd("~/Desktop/professional/biblioteca/data")
@@ -32,15 +31,16 @@ topo <- topo[ind_lon,ind_lat]
 
 ### load map
 setwd("~/Desktop/professional/biblioteca/data/shapefiles/gshhg-shp-2.3.7/GSHHS_shp/h/")
-world <- readOGR('GSHHS_h_L1.shp')
-world <- crop(world, extent(-86, -79, 24.5, 28))
+world <- vect('GSHHS_h_L1.shp')
+world <- crop(world, ext(-86, -79, 24.5, 28))
 
 
 ### load data
 setwd('~/Desktop/professional/projects/Postdoc_FL/data/walton_smith/')
-data <- read.csv('WS22141_SampleLog_Initial.csv')
+setwd('~/Downloads')
+data <- read.csv('WS23203_SampleLog.csv')
 ### cruise name for file naming
-cruise <- 'WS22141'
+cruise <- 'WS23203'
 ### only stations at depth
 ind <- which(data$Depth!=0)
 data2 <- data[ind,]

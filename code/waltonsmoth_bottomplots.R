@@ -56,7 +56,7 @@ topo <- topo[ind_lon,ind_lat]
 # world <- readOGR('ne_10m_admin_0_countries.shp')
 setwd("~/Desktop/professional/biblioteca/data/shapefiles/gshhg-shp-2.3.7/GSHHS_shp/h/")
 world <- vect('GSHHS_h_L1.shp')
-world <- crop(world, extent(-86, -79, 24.5, 30))
+world <- crop(world, ext(-86, -79, 24.5, 30))
 # setwd("~/Desktop/professional/biblioteca/data/shapefiles/Florida_Shoreline__1_to_40%2C000_Scale_-shp")
 # FL <- readOGR('Florida_Shoreline__1_to_40%2C000_Scale_.shp')
 ### load shollow masks
