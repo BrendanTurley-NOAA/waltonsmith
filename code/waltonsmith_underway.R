@@ -47,12 +47,15 @@ masks <- read.csv('TB_SB_CH_masks.csv')
 
 
 ### load underway data
-setwd('~/Desktop/professional/projects/Postdoc_FL/data/walton_smith/')
-underway <- read.csv('WS22281_out.csv')
+setwd('~/Desktop/professional/projects/Postdoc_FL/data/walton_smith/underway_data')
+# underway <- read.csv('WS22281_out.csv')
+underway <- read.csv('WS23203_out.csv')
 ### cruise name for file naming
 cruise <- 'WS22281'
+cruise <- 'WS23203'
 ### make date times; check format b/c can change between cruises
 underway$time <- mdy_hm(underway$time)
+underway$time <- dmy_hms(underway$time)
 ### rename out of convenience
 underway$lon <- underway$lon.dd
 underway$lat <- underway$lat.dd
