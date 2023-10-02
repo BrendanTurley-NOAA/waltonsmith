@@ -5,9 +5,10 @@ library(lubridate)
 library(ncdf4)
 library(NISTunits)
 library(oce)
-library(raster)
-library(rgdal)
+# library(raster)
+# library(rgdal)
 library(scales)
+library(terra)
 
 source('~/Desktop/professional/biblioteca/scripts/color_breaks.R')
 
@@ -36,8 +37,8 @@ topo_lon <- ncvar_get(bathy, 'lon')
 nc_close(bathy)
 
 setwd("~/Desktop/professional/biblioteca/data/shapefiles/ne_10m_admin_0_countries")
-world <- readOGR('ne_10m_admin_0_countries.shp')
-world <- crop(world, extent(-100, -74, 24.5, 40))
+world <- vect('ne_10m_admin_0_countries.shp')
+world <- crop(world, ext(-100, -74, 24.5, 40))
 
 
 ### colors
@@ -58,7 +59,8 @@ o_cols <- c(ox.col1(length(o_breaks[o_breaks<2])),
           ox.col3(length(o_breaks[o_breaks>=3.5])-1))
 
 
-setwd('~/Desktop/noaa_ctd')
+# setwd('~/Desktop/noaa_ctd')
+setwd("/Users/Brendan/Desktop/professional/projects/Postdoc_FL/data/ctd/white_ship/ftp")
 files <- list.files()
 files <- files[grep('.cnv',files)]
 write.table(files,paste(as.Date(Sys.time()),'files.txt',sep='_'),row.names = F,col.names = F,quote=F)
